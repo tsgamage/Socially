@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-interface UserData {
+export interface UserData {
   name: string;
   username: string;
   avatar: string;

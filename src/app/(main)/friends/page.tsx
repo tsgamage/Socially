@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import FriendCard from "@/components/Friends/FriendCard";
+import FriendCard, { UserData } from "@/components/Friends/FriendCard";
 
-const suggestedFriends = [
+const suggestedFriends: UserData[] = [
   {
     name: "Alice",
     username: "alice_w",
@@ -33,7 +33,7 @@ const suggestedFriends = [
   },
 ];
 
-const myFriends = [
+const myFriends: UserData[] = [
   {
     name: "Eve",
     username: "eve_a",
@@ -60,7 +60,7 @@ const myFriends = [
   },
 ];
 
-const requests = [
+const requests: UserData[] = [
   {
     name: "Harry",
     username: "harry_k",
