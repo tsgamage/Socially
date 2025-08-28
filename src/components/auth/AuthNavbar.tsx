@@ -8,16 +8,7 @@ export default function AuthNavbar() {
           Socially
         </Link>
       </div>
-      <div className="flex-none">
-        <ul className="menu menu-horizontal px-1">
-          <li>
-            <Link href="/login">Login</Link>
-          </li>
-          <li>
-            <Link href="/signup">Sign Up</Link>
-          </li>
-        </ul>
-      </div>
+      <div className="flex-none"></div>
     </div>
   );
 }
