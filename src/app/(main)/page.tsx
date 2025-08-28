@@ -1,5 +1,5 @@
-import CreatePost from "@/components/main/CreatePost";
-import PostCard from "@/components/main/PostCard";
+import CreatePost from "@/components/Home/CreatePost";
+import PostCard from "@/components/Home/PostCard";
 
 const dummyPosts = [
   {

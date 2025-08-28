@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import ImageModal from "@/components/main/ImageModal";
+import ImageModal from "@/components/Explore/ImageModal";
 
 const dummyExploreImages = Array.from({ length: 30 }).map((_, i) => ({
   src: `https://picsum.photos/id/${100 + i}/500/500`,
