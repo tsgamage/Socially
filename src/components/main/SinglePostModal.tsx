@@ -1,3 +1,4 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -54,15 +55,11 @@ export default function SinglePostModal({ post, onClose }: SinglePostModalProps)
   const [newComment, setNewComment] = useState("");
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prevIndex) =>
-      prevIndex === 0 ? post.images.length - 1 : prevIndex - 1
-    );
+    setCurrentImageIndex((prevIndex) => (prevIndex === 0 ? post.images.length - 1 : prevIndex - 1));
   };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prevIndex) =>
-      prevIndex === post.images.length - 1 ? 0 : prevIndex + 1
-    );
+    setCurrentImageIndex((prevIndex) => (prevIndex === post.images.length - 1 ? 0 : prevIndex + 1));
   };
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -122,7 +119,10 @@ export default function SinglePostModal({ post, onClose }: SinglePostModalProps)
                   </div>
                 </div>
                 <div>
-                  <Link href={`/profile/${post.user.username}`} className="font-semibold hover:underline">
+                  <Link
+                    href={`/profile/${post.user.username}`}
+                    className="font-semibold hover:underline"
+                  >
                     {post.user.name}
                   </Link>
                   <p className="text-sm text-base-content/70">@{post.user.username}</p>
@@ -137,10 +137,18 @@ export default function SinglePostModal({ post, onClose }: SinglePostModalProps)
             <div className="flex-grow overflow-y-auto py-4 pr-2 bg-base-200 rounded-box">
               <h3 className="font-semibold mb-2 px-2">Comments</h3>
               {dummyComments.map((comment, index) => (
-                <div key={index} className="flex items-start mb-4 px-2 border-b border-base-300 pb-3 last:border-b-0">
+                <div
+                  key={index}
+                  className="flex items-start mb-4 px-2 border-b border-base-300 pb-3 last:border-b-0"
+                >
                   <div className="avatar mr-3">
                     <div className="w-8 h-8 rounded-full">
-                      <Image src={comment.user.avatar} alt={comment.user.name} width={32} height={32} />
+                      <Image
+                        src={comment.user.avatar}
+                        alt={comment.user.name}
+                        width={32}
+                        height={32}
+                      />
                     </div>
                   </div>
                   <div>
