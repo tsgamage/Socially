@@ -25,11 +25,11 @@ export default async function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`antialiased`}>
+        <body className={`antialiased h-screen overflow-hidden flex flex-col`}>
           <Navbar />
-          <div className="flex">
+          <div className="flex flex-1 overflow-hidden">
             <LeftSideBar />
-            <main className="flex-1 p-4">
+            <main className="flex-1 p-4 overflow-y-auto">
               {children}
             </main>
             <RightSideBar />

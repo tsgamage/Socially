@@ -15,7 +15,7 @@ export default function LeftSideBar() {
   const pathname = usePathname();
 
   return (
-    <div className="hidden md:flex flex-col w-64 p-4 border-r border-base-300">
+    <div className="hidden md:flex flex-col w-64 p-4 border-r border-base-300 overflow-y-auto flex-shrink-0">
       <div className="flex flex-col space-y-2">
         {links.map((link) => {
           const LinkIcon = link.icon;
