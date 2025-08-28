@@ -4,7 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/ui/Navbar";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import Footer from "@/components/ui/Footer";
+import Navigation from "@/components/ui/Navigation";
 
 export const metadata: Metadata = {
   title: "Socially",
@@ -25,8 +25,12 @@ export default async function RootLayout({
       <html lang="en">
         <body className={`antialiased`}>
           <Navbar />
-          {children}
-          <Footer />
+          <main className="grid grid-cols-12">
+            <div className="hidden lg:grid lg:col-span-2 border-2">SideBar Left</div>
+            <div className="col-span-12 lg:col-span-8 border-2">{children}</div>
+            <div className="hidden lg:grid lg:col-span-2 border-2">SideBar Right</div>
+          </main>
+          <Navigation />
         </body>
       </html>
     </ClerkProvider>
