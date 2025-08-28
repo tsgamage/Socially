@@ -1,6 +1,7 @@
+import { IComment } from "@/lib/types/modals.type";
 import mongoose from "mongoose";
 
-const commentSchema = new mongoose.Schema(
+const commentSchema = new mongoose.Schema<IComment>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     post: { type: mongoose.Schema.Types.ObjectId, ref: "Post", required: true, index: true },

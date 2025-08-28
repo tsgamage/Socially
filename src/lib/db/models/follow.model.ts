@@ -1,6 +1,7 @@
+import { IFollow } from "@/lib/types/modals.type";
 import mongoose from "mongoose";
 
-const FollowSchema = new mongoose.Schema(
+const FollowSchema = new mongoose.Schema<IFollow>(
   {
     follower: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     following: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },

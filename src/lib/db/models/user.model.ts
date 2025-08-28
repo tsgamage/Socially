@@ -1,24 +1,29 @@
+import { IUser } from "@/lib/types/modals.type";
 import mongoose from "mongoose";
 
-const UserSchema: mongoose.Schema = new mongoose.Schema(
+const userSchema: mongoose.Schema = new mongoose.Schema<IUser>(
   {
-    clerkID: { type: String, unique: true, required: true, index: true },
+    clerkId: { type: String, unique: true, required: true, index: true },
     username: { type: String, unique: true, required: true, index: true }, // fast username lookups
     email: { type: String, unique: true, required: true, index: true }, // login
     name: { type: String },
     bio: { type: String, maxLength: 160 },
-    status: { type: String },
+    status: { type: String, default: "Hey there!" },
     profilePic: { type: String },
     bannerPic: { type: String },
-    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }],
-    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }],
+    
+    followersCount: [{ type: Number, default: 0 }],
+    followingCount: [{ type: Number, default: 0 }],
+    postsCount: [{ type: Number, default: 0 }],
+    savedPostsCount: [{ type: Number, default: 0 }],
+    notificationsCount: [{ type: Number, default: 0 }],
   },
   { timestamps: true }
 );
 
 // Extra indexing
-UserSchema.index({ username: 1 });
-UserSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ email: 1 });
 
-const User = mongoose.model("User", UserSchema);
+const User = mongoose.model("User", userSchema);
 export default User;

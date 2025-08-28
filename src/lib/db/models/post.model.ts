@@ -1,3 +1,4 @@
+import { IPost } from "@/lib/types/modals.type";
 import mongoose from "mongoose";
 
 const votes = new mongoose.Schema({
@@ -6,7 +7,7 @@ const votes = new mongoose.Schema({
   voteCount: { type: Number, default: 0 },
 });
 
-const PostSchema = new mongoose.Schema(
+const PostSchema = new mongoose.Schema<IPost>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     content: { type: String, required: true },
