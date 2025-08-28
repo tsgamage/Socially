@@ -2,9 +2,8 @@
 
 import { connectDB } from "@/lib/db/db.config";
 import Post from "@/lib/db/models/post.model";
-import User from "@/lib/db/models/user.model";
-import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { getUserByClerkId } from "./util.action";
 
 export type PostFormState = {
   success: boolean;
@@ -23,18 +22,13 @@ export async function createPost(
 
   try {
     await connectDB();
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getUserByClerkId();
+
+    if (!user) {
       return { success: false, message: "Unauthorized", content };
     }
 
-    const user = await User.findOne({ clerkId: userId });
-    if (!user) {
-      return { success: false, message: "User not found", content };
-    }
-
     const post = new Post({ content, user: user._id });
-
     await post.save();
 
     revalidatePath("/");
@@ -48,17 +42,11 @@ export async function createPost(
 
 export async function getAllPosts() {
   try {
-    const { userId } = await auth();
-    console.log(`userId: ${userId}`);
-
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
-
-    const user = await User.findOne({ clerkId: userId });
+    await connectDB();
+    const user = await getUserByClerkId();
 
     if (!user) {
-      throw new Error("User not found");
+      return { success: false, message: "Unauthorized" };
     }
 
     const posts = await Post.find({ user: user._id });

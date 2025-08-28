@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import ImageModal from "@/components/Explore/ImageModal"; // Corrected import path
+import ImageModal from "@/components/main/ImageModal"; // Corrected import path
 
 const dummyUserProfile = {
   banner: "https://picsum.photos/id/1047/1200/300",

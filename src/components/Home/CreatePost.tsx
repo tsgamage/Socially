@@ -1,46 +1,202 @@
 "use client";
 import { createPost } from "@/actions/post.actions";
 import Image from "next/image";
-import React, { useActionState } from "react";
+import React, { useActionState, useRef, useState } from "react";
+import { ImageIcon, X } from "lucide-react";
+import UserAvatar from "./UserAvatar";
 
 export default function CreatePost() {
+  const input = useRef<HTMLInputElement>(null);
+  const [images, setImages] = useState<string[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  function handleAddImages(event: React.FormEvent<HTMLInputElement>) {
+    const files = event.currentTarget.files;
+    if (!files) return;
+
+    if (images.length + files.length > 4) {
+      alert(
+        `You can only upload a maximum of 4 images. You have already selected ${images.length}.`
+      );
+      return;
+    }
+
+    // Process each selected file
+    for (const file of Array.from(files)) {
+      const fileReader = new FileReader();
+      fileReader.onload = () => {
+        if (typeof fileReader.result === "string") {
+          setImages((prevImages) => [...prevImages, fileReader.result as string]);
+        }
+      };
+      fileReader.readAsDataURL(file);
+    }
+  }
+
+  function removeImage(index: number) {
+    setImages(images.filter((_, i) => i !== index));
+  }
+
   const [formState, formAction] = useActionState(createPost, {
     success: false,
     message: "",
     content: "",
   });
 
-  return (
-    <div className="card bg-base-200 shadow-xl border border-base-content/20 mb-4">
-      <div className="card-body">
-        <form action={formAction}>
-          <div className="flex items-center mb-4">
-            <div className="avatar mr-4">
-              <div className="w-12 rounded-full">
-                <Image
-                  src="https://i.pravatar.cc/150?u=a042581f4e29026024d"
-                  alt="User Avatar"
-                  width={48}
-                  height={48}
-                />
-              </div>
+  const handleTextareaFocus = () => {
+    setIsExpanded(true);
+  };
+
+  const handleTextareaBlur = () => {
+    // Only collapse if there's no content and no images
+    if (!textareaRef.current?.value && images.length === 0) {
+      setIsExpanded(false);
+    }
+  };
+
+  // Function to render images based on count
+  const renderImagePreview = () => {
+    if (images.length === 0) return null;
+
+    if (images.length === 1) {
+      return (
+        <div className="relative w-full h-80 rounded-lg overflow-hidden">
+          <Image src={images[0]} alt="Preview 1" fill className="object-cover" />
+          <button
+            title="remove image"
+            type="button"
+            onClick={() => removeImage(0)}
+            className="absolute top-2 right-2 btn btn-circle btn-sm bg-base-100/80 hover:bg-base-100"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      );
+    }
+
+    if (images.length === 2) {
+      return (
+        <div className="grid grid-cols-2 gap-2 w-full h-80">
+          {images.map((img, index) => (
+            <div key={index} className="relative rounded-lg overflow-hidden">
+              <Image src={img} alt={`Preview ${index + 1}`} fill className="object-cover" />
+              <button
+                title="remove image"
+                type="button"
+                onClick={() => removeImage(index)}
+                className="absolute top-2 right-2 btn btn-circle btn-sm bg-base-100/80 hover:bg-base-100"
+              >
+                <X size={16} />
+              </button>
             </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (images.length >= 3) {
+      return (
+        <div className="grid grid-cols-2 grid-rows-2 gap-2 w-full h-80">
+          {/* First image takes full width of first row */}
+          <div className="relative col-span-2 row-span-1 rounded-lg overflow-hidden">
+            <Image src={images[0]} alt="Preview 1" fill className="object-cover" />
+            <button
+              title="remove image"
+              type="button"
+              onClick={() => removeImage(0)}
+              className="absolute top-2 right-2 btn btn-circle btn-sm bg-base-100/80 hover:bg-base-100"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Second and third images in second row */}
+          <div className="relative rounded-lg overflow-hidden">
+            <Image src={images[1]} alt="Preview 2" fill className="object-cover" />
+            <button
+              title="remove image"
+              type="button"
+              onClick={() => removeImage(1)}
+              className="absolute top-2 right-2 btn btn-circle btn-sm bg-base-100/80 hover:bg-base-100"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="relative rounded-lg overflow-hidden">
+            <Image src={images[2]} alt="Preview 3" fill className="object-cover" />
+            <button
+              title="remove image"
+              type="button"
+              onClick={() => removeImage(2)}
+              className="absolute top-2 right-2 btn btn-circle btn-sm bg-base-100/80 hover:bg-base-100"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Show +X overlay if there are more than 3 images */}
+            {images.length > 3 && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <span className="text-white font-bold text-lg ml-1">+{images.length - 3}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div className="card bg-base-100 shadow-xl border border-base-content/10 mb-4 p-4">
+      <div className="card-body p-0">
+        <form action={formAction}>
+          <div className="flex items-start gap-3 mb-4">
+            {/* User avatar - hidden when expanded */}
+            {!isExpanded && <UserAvatar />}
+
             <textarea
-              className="textarea textarea-bordered flex-grow"
+              ref={textareaRef}
+              className="textarea textarea-ghost flex-grow resize-none px-4 py-3 rounded-2xl bg-base-200/50 focus:bg-base-200 transition-all"
               name="content"
               placeholder="What's on your mind?"
               defaultValue={formState.content}
+              onFocus={handleTextareaFocus}
+              onBlur={handleTextareaBlur}
+              rows={isExpanded ? 3 : 1}
             ></textarea>
           </div>
-          {/* Image preview area */}
-          <div className="grid grid-cols-2 gap-2 mb-4">{/* Placeholder for image previews */}</div>
-          <div className="card-actions justify-between items-center mt-4">
+
+          {/* Image preview */}
+          {images.length > 0 && <div className="mb-4">{renderImagePreview()}</div>}
+
+          <div className="flex justify-between items-center pt-3 border-t border-base-content/10">
             <input
+              ref={input}
               type="file"
-              className="file-input file-input-bordered w-full max-w-xs"
-              title="Image Input"
+              className="hidden"
+              title="image"
+              multiple
+              min={1}
+              max={4}
+              accept="image/png, image/jpeg, image/jpg"
+              onChange={handleAddImages}
             />
-            <button type="submit" className="btn btn-primary">
+
+            <button
+              title="add image"
+              type="button"
+              className="btn btn-ghost btn-circle md:btn-md btn-sm"
+              onClick={() => input.current?.click()}
+            >
+              <ImageIcon size={20} />
+            </button>
+
+            <button
+              type="submit"
+              className="btn btn-primary px-6"
+              disabled={!textareaRef.current?.value && images.length === 0}
+            >
               Post
             </button>
           </div>
