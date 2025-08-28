@@ -12,18 +12,8 @@ export default function Navbar() {
       <Link href="/">
         <div className="text-2xl md:text-3xl font-bold text-primary">Socially</div>
       </Link>
-      <div className="hidden md:flex items-center bg-base-200 rounded-full px-4 py-2">
-        <Search className="text-base-content/50" />
-        <input
-          type="text"
-          placeholder="Search..."
-          className="bg-transparent focus:outline-none ml-2"
-        />
-      </div>
+
       <div className="flex gap-4 items-center">
-        <Link className="size-6 hover:text-primary" href={"/messages"}>
-          <MessageSquare />
-        </Link>
         <Link className="size-6 hover:text-primary" href="/notification">
           <Bell />
           {/* <BellDot/> */}
