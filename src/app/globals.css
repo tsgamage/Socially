@@ -1,2 +1,19 @@
 @import "tailwindcss";
 @plugin "daisyui";
+@tailwind utilities;
+
+.dock {
+  @apply fixed bottom-0 left-0 right-0 h-16 bg-base-100 border-t border-base-300 flex items-center justify-around;
+}
+
+.dock-sm {
+  @apply h-14;
+}
+
+.dock a {
+  @apply flex-1 flex items-center justify-center h-full text-base-content/70 transition-colors duration-200;
+}
+
+.dock a.dock-active {
+  @apply text-primary;
+}
