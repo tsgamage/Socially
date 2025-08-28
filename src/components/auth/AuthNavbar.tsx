@@ -1,13 +1,23 @@
 import Link from "next/link";
-import NavButton from "./NavButton";
 
 export default function AuthNavbar() {
   return (
-    <nav className="width-full h-12 flex justify-between items-center px-10">
-      <div className="text-3xl font-bold">
-        <Link href={"/login"}>Socially</Link>
+    <div className="navbar bg-base-100">
+      <div className="flex-1">
+        <Link href="/" className="btn btn-ghost normal-case text-xl">
+          Socially
+        </Link>
       </div>
-      <NavButton />
-    </nav>
+      <div className="flex-none">
+        <ul className="menu menu-horizontal px-1">
+          <li>
+            <Link href="/login">Login</Link>
+          </li>
+          <li>
+            <Link href="/signup">Sign Up</Link>
+          </li>
+        </ul>
+      </div>
+    </div>
   );
 }

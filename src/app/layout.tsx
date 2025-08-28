@@ -1,6 +1,7 @@
 import "./globals.css";
 import { type Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 
 export const metadata: Metadata = {
   title: "Socially",
@@ -13,8 +14,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
+    <ClerkProvider appearance={{ theme: dark }}>
+      <html lang="en" data-theme="dark">
         <body>{children}</body>
       </html>
     </ClerkProvider>
