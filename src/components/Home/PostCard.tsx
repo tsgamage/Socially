@@ -10,7 +10,7 @@ interface Post {
   images?: string[];
 }
 
-export default function PostCard({ post }: { post: Post }) {
+export default function PostCard({ post, onClick }: { post: Post; onClick: () => void }) {
   const renderImages = (images: string[]) => {
     const count = images.length;
 
@@ -87,7 +87,7 @@ export default function PostCard({ post }: { post: Post }) {
   };
 
   return (
-    <div className="card bg-base-200 shadow-xl border border-base-content/20 mb-4">
+    <div className="card bg-base-200 shadow-xl border border-base-content/20 mb-4 cursor-pointer" onClick={onClick}>
       <div className="card-body">
         <div className="flex items-center mb-4">
           <div className="avatar mr-4">
