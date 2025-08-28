@@ -16,5 +16,6 @@ const NotificationSchema = new mongoose.Schema<INotification>(
 // Fetch notifications for a user, newest first
 NotificationSchema.index({ user: 1, createdAt: -1 });
 
-const Notification = mongoose.model("Notification", NotificationSchema);
+const Notification =
+  mongoose.models.Notification || mongoose.model<INotification>("Notification", NotificationSchema);
 export default Notification;

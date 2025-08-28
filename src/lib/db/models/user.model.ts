@@ -11,7 +11,7 @@ const userSchema: mongoose.Schema = new mongoose.Schema<IUser>(
     status: { type: String, default: "Hey there!" },
     profilePic: { type: String },
     bannerPic: { type: String },
-    
+
     followersCount: [{ type: Number, default: 0 }],
     followingCount: [{ type: Number, default: 0 }],
     postsCount: [{ type: Number, default: 0 }],
@@ -21,9 +21,5 @@ const userSchema: mongoose.Schema = new mongoose.Schema<IUser>(
   { timestamps: true }
 );
 
-// Extra indexing
-userSchema.index({ username: 1 });
-userSchema.index({ email: 1 });
-
-const User = mongoose.model("User", userSchema);
+const User = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 export default User;

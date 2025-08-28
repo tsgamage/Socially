@@ -11,5 +11,5 @@ const FollowSchema = new mongoose.Schema<IFollow>(
 
 FollowSchema.index({ follower: 1, following: 1 }, { unique: true });
 
-const Follow = mongoose.model("Follow", FollowSchema);
+const Follow = mongoose.models.Follow || mongoose.model<IFollow>("Follow", FollowSchema);
 export default Follow;

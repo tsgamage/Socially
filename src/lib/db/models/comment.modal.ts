@@ -16,5 +16,5 @@ const commentSchema = new mongoose.Schema<IComment>(
 commentSchema.index({ post: 1, createdAt: -1 });
 commentSchema.index({ createdAt: -1 });
 
-const Comment = mongoose.model("Comment", commentSchema);
+const Comment = mongoose.models.Comment || mongoose.model<IComment>("Comment", commentSchema);
 export default Comment;

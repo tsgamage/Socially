@@ -12,5 +12,7 @@ const FollowRequestSchema = new mongoose.Schema<IFollowRequest>(
 
 FollowRequestSchema.index({ sender: 1, receiver: 1 }, { unique: true });
 
-const FollowRequest = mongoose.model("FollowRequest", FollowRequestSchema);
+const FollowRequest =
+  mongoose.models.FollowRequest ||
+  mongoose.model<IFollowRequest>("FollowRequest", FollowRequestSchema);
 export default FollowRequest;
