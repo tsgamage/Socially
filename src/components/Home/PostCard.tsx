@@ -22,9 +22,10 @@ import { useUser } from "@clerk/nextjs";
 interface PostCardProps {
   post: IPost;
   onClick: (imageIndex?: number) => void;
+  onCommentClick: () => void;
 }
 
-export default function PostCard({ post, onClick }: PostCardProps) {
+export default function PostCard({ post, onClick, onCommentClick }: PostCardProps) {
   const { user: clerkUser } = useUser();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCommentInput, setShowCommentInput] = useState(false);
@@ -144,11 +145,11 @@ export default function PostCard({ post, onClick }: PostCardProps) {
 
           {/* Navigation Arrows */}
           {post.images.length > 1 && (
-            <>
+            <div>
               <button
                 type="button"
                 title="Previous Image"
-                className="absolute left-2 top-1/2 -translate-y-1/2 btn btn-circle btn-sm bg-base-100/70 hover:bg-base-100 border-0"
+                className="absolute left-2 top-1/2 btn btn-circle btn-sm bg-base-100/30 hover:bg-base-100 border-0"
                 onClick={handlePrevImage}
               >
                 <ChevronLeft size={16} />
@@ -156,12 +157,12 @@ export default function PostCard({ post, onClick }: PostCardProps) {
               <button
                 type="button"
                 title="Next Image"
-                className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-circle btn-sm bg-base-100/70 hover:bg-base-100 border-0"
+                className="absolute right-2 top-1/2 btn btn-circle btn-sm bg-base-100/30 hover:bg-base-100 border-0"
                 onClick={handleNextImage}
               >
                 <ChevronRight size={16} />
               </button>
-            </>
+            </div>
           )}
 
           {/* Image Indicator Dots */}
@@ -209,7 +210,10 @@ export default function PostCard({ post, onClick }: PostCardProps) {
                 type="button"
                 className="flex items-center gap-2 bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
                 onDoubleClick={() => setShowCommentInput((preValue) => !preValue)}
-                onClick={() => console.log("Openning comment model...")}
+                onClick={() => {
+                  onCommentClick();
+                  onClick();
+                }}
               >
                 <MessageSquare size={24} />
                 {post && post.commentsCount > 0 && (

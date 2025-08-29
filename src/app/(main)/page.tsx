@@ -10,19 +10,25 @@ import { useState } from "react";
 export default function Home() {
   const [showModal, setShowModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<IPost>({} as IPost);
+  const [initialImageIndex, setInitialImageIndex] = useState(0);
+  const [isCommentClicked, setIsCommentClicked] = useState(false);
 
-  const { data, isLoading } = useSuspenseQuery({ queryKey: ["posts"], queryFn: getAllPosts });
+  const { data, isLoading } = useSuspenseQuery({
+    queryKey: ["posts"],
+    queryFn: getAllPosts,
+  });
 
-  console.log(data);
-
-  const handlePostClick = (post: IPost) => {
+  const handlePostClick = (post: IPost, imageIndex: number = 0) => {
     setSelectedPost(post);
+    setInitialImageIndex(imageIndex);
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedPost({} as IPost);
+    setInitialImageIndex(0);
+    setIsCommentClicked(false);
   };
 
   return (
@@ -31,11 +37,22 @@ export default function Home() {
       <div>
         {!isLoading &&
           data!.map((post: IPost, index: number) => (
-            <PostCard key={index} post={post} onClick={() => handlePostClick(post)} />
+            <PostCard
+              key={index}
+              post={post}
+              onClick={(imageIndex?: number) => handlePostClick(post, imageIndex ?? 0)}
+              onCommentClick={() => setIsCommentClicked(true)}
+            />
           ))}
       </div>
+
       {showModal && selectedPost && (
-        <SinglePostModal post={selectedPost} onClose={handleCloseModal} />
+        <SinglePostModal
+          post={selectedPost}
+          onClose={handleCloseModal}
+          showCommens={isCommentClicked}
+          initialImageIndex={initialImageIndex}
+        />
       )}
     </div>
   );
