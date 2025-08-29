@@ -3,17 +3,21 @@
 import Image from "next/image";
 import { useState } from "react";
 import {
-  Heart,
-  MessageCircle,
-  Share,
   Bookmark,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
   MapPin,
+  ArrowBigUpDash,
+  ArrowBigDownDash,
+  MessageSquare,
+  SendHorizontal,
+  X,
 } from "lucide-react";
 import { IPost } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
+import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 
 interface PostCardProps {
   post: IPost;
@@ -21,7 +25,9 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, onClick }: PostCardProps) {
+  const { user: clerkUser } = useUser();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showCommentInput, setShowCommentInput] = useState(false);
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -38,23 +44,44 @@ export default function PostCard({ post, onClick }: PostCardProps) {
   };
 
   return (
-    <div className="card bg-base-100 shadow-md border border-base-300 rounded-xl mb-6 overflow-hidden">
+    <div className="card xl:w-10/12 bg-base-500 shadow-md border border-base-content/10 rounded-xl mb-6 overflow-hidden mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between p-3">
+      <div className="flex items-center justify-between p-3 border-b-1 border-base-content/10">
         <div className="flex items-center">
           <div className="avatar mr-3">
-            <div className="w-8 h-8 rounded-full overflow-hidden">
-              <Image
-                src={post.user.profilePic || "/user/default/user.jpg"}
-                alt={post.user.username as string}
-                width={32}
-                height={32}
-                className="object-cover"
-              />
+            <div className="size-10 rounded-full overflow-hidden cursor-pointer">
+              <Link href={`/profile/${post.user.username}`}>
+                <Image
+                  src={post.user.profilePic || "/user/default/user.jpg"}
+                  alt={post.user.username as string}
+                  width={32}
+                  height={32}
+                  className="object-cover"
+                />
+              </Link>
             </div>
           </div>
           <div>
-            <p className="text-sm font-semibold">{post.user.name}</p>
+            <Link
+              href={`/profile/${post.user.username}`}
+              className="hover:underline hover:text-gray-300"
+            >
+              <p className="text-sm font-semibold">{post.user.name}</p>
+            </Link>
+            <p className="text-sm text-gray-400">@{post.user.username}</p>
+            <div className="flex">
+              <p className="text-xs text-gray-400">
+                {formatDistanceToNowStrict(post.createdAt, { addSuffix: true })}
+              </p>
+              <p className="text-xs text-gray-400 ml-1">-</p>
+              <p className="text-xs text-gray-400 ml-1">{post.visibility}</p>
+              {post.createdAt !== post.updatedAt && (
+                <>
+                  <p className="text-xs text-gray-400 ml-1">-</p>
+                  <p className="text-xs text-gray-400 ml-1">Edited</p>
+                </>
+              )}
+            </div>
             {post.location && (
               <p className="text-xs text-gray-500 flex items-center">
                 <MapPin size={12} className="mr-1" />
@@ -63,9 +90,43 @@ export default function PostCard({ post, onClick }: PostCardProps) {
             )}
           </div>
         </div>
-        <button title="Menu Button" className="btn btn-ghost btn-sm btn-circle">
-          <MoreHorizontal size={20} />
-        </button>
+
+        {post.user.clerkId !== clerkUser?.id ? (
+          <div className="dropdown dropdown-end rounded-full">
+            <div tabIndex={0} title="More" role="button" className="btn btn-ghost btn-circle">
+              <MoreHorizontal size={20} />
+            </div>
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+            >
+              <>
+                <li>
+                  <a>Edit</a>
+                </li>
+                <li>
+                  <a>Visibility ({post.visibility})</a>
+                </li>
+              </>
+
+              <li className="text-red-500">
+                <a>Delete</a>
+              </li>
+            </ul>
+          </div>
+        ) : (
+          <div
+            className="btn btn-ghost btn-circle tooltip tooltip-error tooltip-left"
+            data-tip="Hide This Post"
+          >
+            <X size={20} />
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="mb-1 p-3">
+        <span className="text-md">{post.content}</span>
       </div>
 
       {/* Image Carousel */}
@@ -119,73 +180,75 @@ export default function PostCard({ post, onClick }: PostCardProps) {
 
       {/* Actions */}
       <div className="p-3">
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex justify-between items-center mb-2 ">
           <div className="flex space-x-4">
+            <div className="flex items-center justify-between w-auto space-x-2 bg-gray-900/70  rounded-full ">
+              <div className="tooltip" data-tip="Upvote">
+                <button
+                  title="Give a Upvote"
+                  type="button"
+                  className="cursor-pointer flex items-center gap-1 hover:bg-gray-800 w-full h-full rounded-l-full p-2 "
+                >
+                  <ArrowBigUpDash size={24} />
+                  <p className="text-sm font-semibold mb-1">{post.votesCount}</p>
+                </button>
+              </div>
+              <div className="tooltip" data-tip="Downvote">
+                <button
+                  title="Give a Downvote"
+                  type="button"
+                  className="cursor-pointer flex items-center gap-1 hover:bg-gray-800 w-full h-full rounded-r-full p-2 "
+                >
+                  <ArrowBigDownDash scale={24} />
+                </button>
+              </div>
+            </div>
+            <div className="tooltip" data-tip="See Comments">
+              <button
+                title="See Comments"
+                type="button"
+                className="flex items-center gap-2 bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
+                onDoubleClick={() => setShowCommentInput((preValue) => !preValue)}
+                onClick={() => console.log("Openning comment model...")}
+              >
+                <MessageSquare size={24} />
+                {post && post.commentsCount > 0 && (
+                  <p className="text-sm font-semibold mb-1">{post.commentsCount}</p>
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="tooltip" data-tip="Save Post">
             <button
-              title="Like Button"
+              title="Bookmark Button"
               type="button"
-              className="btn btn-ghost btn-sm p-0 hover:bg-transparent"
+              className="bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
             >
-              <Heart size={24} />
-            </button>
-            <button
-              title="Comment Button"
-              type="button"
-              className="btn btn-ghost btn-sm p-0 hover:bg-transparent"
-              onClick={() => handleImageClick(0)}
-            >
-              <MessageCircle size={24} />
-            </button>
-            <button
-              type="button"
-              title="Share Button"
-              className="btn btn-ghost btn-sm p-0 hover:bg-transparent"
-            >
-              <Share size={24} />
+              <Bookmark size={24} />
             </button>
           </div>
-          <button
-            title="Bookmark Button"
-            type="button"
-            className="btn btn-ghost btn-sm p-0 hover:bg-transparent"
-          >
-            <Bookmark size={24} />
-          </button>
         </div>
-
-        {/* Likes count */}
-        <p className="text-sm font-semibold mb-1">{post.votesCount} likes</p>
-
-        {/* Content */}
-        <div className="mb-1">
-          <span className="text-sm font-semibold mr-2">{post.user.username}</span>
-          <span className="text-sm">{post.content}</span>
-        </div>
-
-        {/* View all comments */}
-        {post.commentsCount > 0 && (
-          <button className="text-sm text-gray-500 mb-2" onClick={() => handleImageClick(0)}>
-            View all {post.commentsCount} comments
-          </button>
-        )}
-
-        {/* Date */}
-        <p className="text-xs text-gray-400">
-          {formatDistanceToNowStrict(post.createdAt, { addSuffix: true })}
-        </p>
       </div>
 
       {/* Add comment (simplified) */}
-      <div className="border-t border-base-300 p-3">
-        <div className="flex items-center">
-          <input
-            type="text"
-            placeholder="Add a comment..."
-            className="input input-ghost input-sm w-full focus:outline-none"
-          />
-          <button className="btn btn-ghost btn-sm text-primary">Post</button>
+      {showCommentInput && (
+        <div className="border-t border-base-300 p-3">
+          <div className="flex items-center">
+            <input
+              type="text"
+              placeholder="Add a comment..."
+              className="input input-ghost input-md w-full focus:outline-none"
+            />
+            <button
+              type="button"
+              title="Post comment"
+              className="btn btn-ghost btn-circle text-primary"
+            >
+              <SendHorizontal />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

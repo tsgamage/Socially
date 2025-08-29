@@ -52,7 +52,7 @@ export async function getAllPosts() {
 
     const posts = await Post.find({ visibility: "public" })
       .sort({ createdAt: -1 })
-      .populate("user", "name username avatar")
+      .populate("user", "name username clerkId profilePic")
       .lean();
 
     return JSON.parse(JSON.stringify(posts));

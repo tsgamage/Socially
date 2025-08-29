@@ -149,7 +149,7 @@ export default function CreatePost() {
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-content/10 mb-4 p-4">
+    <div className="card mx-auto xl:w-10/12 bg-base-100 shadow-xl border border-base-content/10 mb-4 p-4">
       <div className="card-body p-0">
         <form action={formAction}>
           <div className="flex items-start gap-3 mb-4">
@@ -188,7 +188,8 @@ export default function CreatePost() {
             <button
               title="add image"
               type="button"
-              className="btn btn-ghost btn-circle md:btn-md btn-sm"
+              data-tip="Add image"
+              className="btn tooltip tooltip-info btn-ghost btn-circle md:btn-md btn-sm"
               onClick={() => input.current?.click()}
             >
               <ImageIcon size={20} />
