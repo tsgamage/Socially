@@ -11,6 +11,7 @@ const PostSchema = new mongoose.Schema<IPost>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     content: { type: String, required: true },
+    location: { type: String, default: null },
     images: [{ type: String }],
     votes: votes,
     commentsCount: { type: Number, default: 0 },

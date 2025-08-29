@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db/db.config";
 import Post from "@/lib/db/models/post.model";
 import { revalidatePath } from "next/cache";
 import { getUserByClerkId } from "./util.action";
+import { IPost } from "@/lib/types/modals.type";
 
 export type PostFormState = {
   success: boolean;
@@ -49,12 +50,15 @@ export async function getAllPosts() {
       return { success: false, message: "Unauthorized" };
     }
 
-    const posts = await Post.find({ user: user._id });
+    const posts = await Post.find({ visibility: "public" })
+      .sort({ createdAt: -1 })
+      .populate("user", "name username avatar")
+      .lean();
 
-    return { success: true, posts };
+    return JSON.parse(JSON.stringify(posts));
   } catch (err) {
     console.error(err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";
-    return { success: false, message };
+    throw new Error(message);
   }
 }

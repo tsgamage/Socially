@@ -5,6 +5,7 @@ export interface IUser extends Document {
   username: string | null;
   email: string;
   name: string | null;
+  gender: string;
   bio: string | null;
   status: string | null;
   profilePic: string;
@@ -19,8 +20,9 @@ export interface IUser extends Document {
 }
 
 export interface IPost extends Document {
-  user: ObjectId;
+  user: IUser;
   content: string;
+  location: string | null;
   images: string[];
   votes: {
     upvotes: ObjectId[];

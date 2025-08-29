@@ -7,7 +7,8 @@ const userSchema: mongoose.Schema = new mongoose.Schema<IUser>(
     username: { type: String, unique: true, required: true, index: true }, // fast username lookups
     email: { type: String, unique: true, required: true, index: true }, // login
     name: { type: String },
-    bio: { type: String, maxLength: 160 },
+    gender: { type: String, enum: ["male", "female", "other"], default: "other" },
+    bio: { type: String, maxLength: 160, default: "Earth is a donut 🤓!" },
     status: { type: String, default: "Hey there!" },
     profilePic: { type: String },
     bannerPic: { type: String },

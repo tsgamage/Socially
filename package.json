@@ -11,6 +11,8 @@
   "dependencies": {
     "@clerk/nextjs": "^6.31.5",
     "@clerk/themes": "^2.4.15",
+    "@tanstack/react-query": "^5.85.5",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.542.0",
     "mongoose": "^8.18.0",
     "next": "15.5.2",
