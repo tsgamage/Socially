@@ -8,6 +8,7 @@ import UserAvatar from "./UserAvatar";
 export default function CreatePost() {
   const input = useRef<HTMLInputElement>(null);
   const [images, setImages] = useState<string[]>([]);
+  const [textareaValue, setTextareaValue] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -164,7 +165,8 @@ export default function CreatePost() {
               onFocus={handleTextareaFocus}
               onBlur={handleTextareaBlur}
               rows={isExpanded ? 3 : 1}
-            ></textarea>
+              onChange={(e) => setTextareaValue(e.target.value)}
+            />
           </div>
 
           {/* Image preview */}
@@ -195,7 +197,7 @@ export default function CreatePost() {
             <button
               type="submit"
               className="btn btn-primary px-6"
-              disabled={!textareaRef.current?.value && images.length === 0}
+              disabled={textareaValue.length < 5}
             >
               Post
             </button>

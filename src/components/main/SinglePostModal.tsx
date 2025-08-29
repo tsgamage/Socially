@@ -1,134 +1,179 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
-import { 
-  Heart, MessageCircle, Share, Bookmark, X, ChevronLeft, 
-  ChevronRight, MoreHorizontal, Smile, MapPin, Send 
+import { useState, useEffect, useRef, ReactElement } from "react";
+import {
+  Heart,
+  MessageCircle,
+  Share,
+  Bookmark,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Smile,
+  MapPin,
+  Send,
 } from "lucide-react";
+import { IPost } from "@/lib/types/modals.type";
+import { formatDistanceToNowStrict } from "date-fns";
 
-interface User {
-  name: string;
-  username: string;
-  avatar: string;
-}
+// Dummy data based on the models
+const dummyUsers = [
+  {
+    _id: "user1",
+    clerkId: "clerk_user1",
+    username: "john_doe",
+    email: "john@example.com",
+    name: "John Doe",
+    gender: "male",
+    bio: "Passionate photographer and nature lover 📸",
+    status: "Hey there!",
+    profilePic: "https://i.pravatar.cc/150?u=john",
+    bannerPic: "https://picsum.photos/id/1047/1200/400",
+    followersCount: 1234,
+    followingCount: 567,
+    postsCount: 89,
+    savedPostsCount: 42,
+    notificationsCount: 5,
+    createdAt: new Date("2024-01-15"),
+    updatedAt: new Date("2024-12-01"),
+  },
+  {
+    _id: "user2",
+    clerkId: "clerk_user2",
+    username: "jane_smith",
+    email: "jane@example.com",
+    name: "Jane Smith",
+    gender: "female",
+    bio: "Adventure seeker and coffee enthusiast ☕",
+    status: "Living life to the fullest!",
+    profilePic: "https://i.pravatar.cc/150?u=jane",
+    bannerPic: "https://picsum.photos/id/1048/1200/400",
+    followersCount: 856,
+    followingCount: 234,
+    postsCount: 45,
+    savedPostsCount: 23,
+    notificationsCount: 2,
+    createdAt: new Date("2024-02-20"),
+    updatedAt: new Date("2024-11-28"),
+  },
+  {
+    _id: "user3",
+    clerkId: "clerk_user3",
+    username: "mike_wilson",
+    email: "mike@example.com",
+    name: "Mike Wilson",
+    gender: "male",
+    bio: "Tech geek and fitness enthusiast 💪",
+    status: "Coding and lifting!",
+    profilePic: "https://i.pravatar.cc/150?u=mike",
+    bannerPic: "https://picsum.photos/id/1049/1200/400",
+    followersCount: 2100,
+    followingCount: 890,
+    postsCount: 156,
+    savedPostsCount: 67,
+    notificationsCount: 12,
+    createdAt: new Date("2024-03-10"),
+    updatedAt: new Date("2024-12-02"),
+  },
+];
 
-interface Post {
-  id: string;
-  user: User;
-  date: string;
-  content: string;
-  images?: string[];
-  likes: number;
-  comments: number;
-  location?: string;
-}
-
-interface Comment {
-  user: User;
-  comment: string;
-  date: string;
-}
+const dummyComments = [
+  {
+    _id: "comment1",
+    user: dummyUsers[1],
+    post: "post1",
+    content: "This is absolutely stunning! Where was this taken?",
+    type: "comment",
+    parentComment: null,
+    createdAt: new Date("2024-12-01T10:30:00"),
+    updatedAt: new Date("2024-12-01T10:30:00"),
+  },
+  {
+    _id: "comment2",
+    user: dummyUsers[2],
+    post: "post1",
+    content: "Love the composition and colors! 🔥",
+    type: "comment",
+    parentComment: null,
+    createdAt: new Date("2024-12-01T11:15:00"),
+    updatedAt: new Date("2024-12-01T11:15:00"),
+  },
+  {
+    _id: "comment3",
+    user: dummyUsers[0],
+    post: "post1",
+    content: "Thanks everyone! This was taken at the Grand Canyon.",
+    type: "comment",
+    parentComment: "comment1",
+    createdAt: new Date("2024-12-01T12:00:00"),
+    updatedAt: new Date("2024-12-01T12:00:00"),
+  },
+  {
+    _id: "comment4",
+    user: dummyUsers[1],
+    post: "post1",
+    content: "Amazing! I've always wanted to visit there.",
+    type: "reply",
+    parentComment: "comment3",
+    createdAt: new Date("2024-12-01T12:30:00"),
+    updatedAt: new Date("2024-12-01T12:30:00"),
+  },
+];
 
 interface SinglePostModalProps {
-  post: Post;
+  post: IPost;
   onClose: () => void;
   initialImageIndex?: number;
 }
 
-const dummyComments: Comment[] = [
-  {
-    user: {
-      name: "Commenter 1",
-      username: "commenter1",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024e",
-    },
-    comment: "Great post! Loved it.",
-    date: "August 28, 2025",
-  },
-  {
-    user: {
-      name: "Commenter 2",
-      username: "commenter2",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704e",
-    },
-    comment: "This is so insightful, thanks for sharing!",
-    date: "August 27, 2025",
-  },
-  {
-    user: {
-      name: "Commenter 3",
-      username: "commenter3",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705e",
-    },
-    comment: "I agree with this point.",
-    date: "August 26, 2025",
-  },
-  {
-    user: {
-      name: "Commenter 4",
-      username: "commenter4",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706e",
-    },
-    comment: "This is amazing!",
-    date: "August 25, 2025",
-  },
-  {
-    user: {
-      name: "Commenter 5",
-      username: "commenter5",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707e",
-    },
-    comment: "I've been waiting for something like this!",
-    date: "August 24, 2025",
-  },
-  {
-    user: {
-      name: "Commenter 6",
-      username: "commenter6",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026708e",
-    },
-    comment: "Beautiful capture! The lighting is perfect.",
-    date: "August 23, 2025",
-  },
-  {
-    user: {
-      name: "Commenter 7",
-      username: "commenter7",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026709e",
-    },
-    comment: "This made my day! 😍",
-    date: "August 22, 2025",
-  },
-];
-
-export default function SinglePostModal({ post, onClose, initialImageIndex = 0 }: SinglePostModalProps) {
+export default function SinglePostModal({
+  post,
+  onClose,
+  initialImageIndex = 0,
+}: SinglePostModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(initialImageIndex);
   const [newComment, setNewComment] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(false);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
-  const hasImages = post.images && post.images.length > 0;
+
+  // Use dummy user data for the post
+  const postUser = dummyUsers[0]; // Assuming the post is by the first user
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  console.log("post", post);
 
   const handlePrevImage = () => {
     if (!post.images) return;
-    setCurrentImageIndex(prev => 
-      prev === 0 ? post.images!.length - 1 : prev - 1
-    );
+    console.log("prev");
+    setCurrentImageIndex((prev) => (prev === 0 ? post.images!.length - 1 : prev - 1));
   };
 
   const handleNextImage = () => {
     if (!post.images) return;
-    setCurrentImageIndex(prev => 
-      prev === post.images!.length - 1 ? 0 : prev + 1
-    );
+    console.log("next");
+    setCurrentImageIndex((prev) => (prev === post.images!.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleImageLoad = () => {
+    setIsImageLoading(false);
+  };
+
+  const handleImageLoadStart = () => {
+    setIsImageLoading(true);
+    // Auto-hide loading after 2 seconds if image doesn't load
+    setTimeout(() => {
+      setIsImageLoading(false);
+    }, 2000);
   };
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,172 +190,79 @@ export default function SinglePostModal({ post, onClose, initialImageIndex = 0 }
     }, 100);
   };
 
-  // For text-only posts
-  if (!hasImages) {
-    return (
-      <div className="modal modal-open">
-        <div className="modal-box max-w-2xl p-0 relative">
-          <button 
-            className="btn btn-sm btn-circle absolute right-2 top-2 z-10"
-            onClick={onClose}
-          >
-            <X size={16} />
-          </button>
-          
-          <div className="p-6">
-            {/* User Info */}
-            <div className="flex items-center mb-6">
-              <div className="avatar mr-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden">
-                  <Image 
-                    src={post.user.avatar} 
-                    alt={post.user.name} 
-                    width={48} 
-                    height={48} 
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-              <div>
-                <Link
-                  href={`/profile/${post.user.username}`}
-                  className="font-semibold hover:underline block"
-                >
-                  {post.user.username}
-                </Link>
-                {post.location && (
-                  <p className="text-sm text-gray-500 flex items-center">
-                    <MapPin size={12} className="mr-1" />
-                    {post.location}
-                  </p>
-                )}
-              </div>
-              <div className="flex-grow"></div>
-              <button className="btn btn-ghost btn-sm btn-circle">
-                <MoreHorizontal size={20} />
-              </button>
-            </div>
+  const imageElementList: ReactElement[] = post.images.map((image, index) => (
+    <Image
+      key={index}
+      src={image}
+      alt={`Post Image ${index + 1}`}
+      fill
+      className="object-contain"
+      sizes="(max-width: 768px) 100vw, 50vw"
+      quality={20}
+      decoding="async"
+      loading="eager"
+    />
+  ));
 
-            {/* Post Content */}
-            <div className="mb-6">
-              <p className="text-lg">{post.content}</p>
-              <p className="text-sm text-gray-500 mt-2">{post.date}</p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-between items-center mb-6 border-t border-b border-base-300 py-4">
-              <div className="flex space-x-4">
-                <button className="btn btn-ghost btn-sm">
-                  <Heart size={20} />
-                  <span className="ml-2">{post.likes}</span>
-                </button>
-                <button className="btn btn-ghost btn-sm">
-                  <MessageCircle size={20} />
-                  <span className="ml-2">{post.comments}</span>
-                </button>
-                <button className="btn btn-ghost btn-sm">
-                  <Share size={20} />
-                </button>
-              </div>
-              <button className="btn btn-ghost btn-sm">
-                <Bookmark size={20} />
-              </button>
-            </div>
-
-            {/* Comments Section */}
-            <div className="mb-6 max-h-96 overflow-y-auto pr-2" ref={commentsContainerRef}>
-              <h3 className="font-semibold mb-4">Comments</h3>
-              {dummyComments.map((comment, index) => (
-                <div key={index} className="flex mb-4 p-3 bg-base-200 rounded-lg">
-                  <div className="avatar mr-3">
-                    <div className="w-8 h-8 rounded-full overflow-hidden">
-                      <Image
-                        src={comment.user.avatar}
-                        alt={comment.user.name}
-                        width={32}
-                        height={32}
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center mb-1">
-                      <span className="font-semibold text-sm mr-2">{comment.user.username}</span>
-                      <span className="text-sm">{comment.comment}</span>
-                    </div>
-                    <p className="text-xs text-gray-500">{comment.date}</p>
-                    
-                    <div className="flex items-center mt-1 space-x-3">
-                      <button className="text-xs text-gray-500">Like</button>
-                      <button className="text-xs text-gray-500">Reply</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div ref={commentsEndRef} />
-            </div>
-
-            {/* Add Comment */}
-            <div className="flex items-center">
-              <Smile size={20} className="text-gray-500 mr-2" />
-              <input
-                type="text"
-                className="input input-bordered input-sm w-full"
-                placeholder="Add a comment..."
-                value={newComment}
-                onChange={handleCommentChange}
-                onKeyPress={(e) => e.key === 'Enter' && handlePostComment()}
-              />
-              <button 
-                className={`btn btn-ghost btn-sm ml-2 ${newComment ? 'text-primary' : 'text-gray-300'}`}
-                onClick={handlePostComment}
-                disabled={!newComment}
-              >
-                <Send size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  console.log("imageElementList", imageElementList);
 
   return (
     <div className="modal modal-open">
-      <div className={`modal-box p-0 relative ${isMobile ? 'h-full max-w-full rounded-none' : 'max-w-4xl h-[90vh]'}`}>
-        <button 
+      <div
+        className={`modal-box p-0 relative ${isMobile ? "h-full max-w-full rounded-none" : "max-w-4xl h-[90vh]"}`}
+      >
+        <button
+          type="button"
+          title="Close Modal"
           className="btn btn-sm btn-circle absolute right-2 top-2 z-10 bg-base-100/80"
           onClick={onClose}
         >
           <X size={16} />
         </button>
-        
-        <div className={`flex ${isMobile ? 'flex-col' : 'h-full'}`}>
+
+        <div className={`flex ${isMobile ? "flex-col" : "h-full"}`}>
           {/* Image Section */}
-          <div className={`relative bg-black flex items-center justify-center ${isMobile ? 'h-80' : 'w-1/2'}`}>
-            <Image
-              src={post.images[currentImageIndex]}
-              alt="Post Image"
-              fill
-              className="object-contain"
-            />
-            
+          <div
+            className={`relative bg-black flex items-center justify-center ${isMobile ? "h-80" : "w-1/2"}`}
+          >
+            {/* Loading overlay */}
+            {isImageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                <div className="loading loading-spinner loading-lg text-white"></div>
+              </div>
+            )}
+
+            {imageElementList.map((imageElement, index) => (
+              <div
+                key={index}
+                className={`absolute inset-0 transition-opacity duration-500 ${
+                  index === currentImageIndex ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                {imageElement}
+              </div>
+            ))}
+
             {/* Navigation Arrows */}
             {post.images.length > 1 && (
               <>
                 <button
+                  title="Previous Image"
+                  type="button"
                   className="btn btn-circle absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-base-100/80 border-0"
                   onClick={handlePrevImage}
                 >
                   <ChevronLeft size={20} />
                 </button>
                 <button
+                  title="Next Image"
+                  type="button"
                   className="btn btn-circle absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-base-100/80 border-0"
                   onClick={handleNextImage}
                 >
                   <ChevronRight size={20} />
                 </button>
-                
+
                 {/* Image Counter */}
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">
                   {currentImageIndex + 1} / {post.images.length}
@@ -320,28 +272,34 @@ export default function SinglePostModal({ post, onClose, initialImageIndex = 0 }
           </div>
 
           {/* Content Section */}
-          <div className={`flex flex-col ${isMobile ? '' : 'w-1/2 h-full'}`}>
+          <div className={`flex flex-col ${isMobile ? "" : "w-1/2 h-full"}`}>
             {/* User Info */}
             <div className="flex items-center p-4 border-b border-base-300">
               <div className="avatar mr-3">
                 <div className="w-8 h-8 rounded-full overflow-hidden">
-                  <Image 
-                    src={post.user.avatar} 
-                    alt={post.user.name} 
-                    width={32} 
-                    height={32} 
+                  <Image
+                    src={postUser.profilePic || "/user/default/user.jpg"}
+                    alt={postUser.username}
+                    width={32}
+                    height={32}
                     className="object-cover"
                   />
                 </div>
               </div>
               <Link
-                href={`/profile/${post.user.username}`}
+                href={`/profile/${postUser.username}`}
                 className="font-semibold text-sm hover:underline"
               >
-                {post.user.username}
+                {postUser.username}
               </Link>
+              {post.location && (
+                <div className="flex items-center ml-2 text-xs text-gray-500">
+                  <MapPin size={12} className="mr-1" />
+                  {post.location}
+                </div>
+              )}
               <div className="flex-grow"></div>
-              <button className="btn btn-ghost btn-sm">
+              <button type="button" title="More Options" className="btn btn-ghost btn-sm">
                 <MoreHorizontal size={20} />
               </button>
             </div>
@@ -351,37 +309,36 @@ export default function SinglePostModal({ post, onClose, initialImageIndex = 0 }
               <div className="flex">
                 <div className="avatar mr-3">
                   <div className="w-8 h-8 rounded-full overflow-hidden">
-                    <Image 
-                      src={post.user.avatar} 
-                      alt={post.user.name} 
-                      width={32} 
-                      height={32} 
+                    <Image
+                      src={postUser.profilePic || "/user/default/user.jpg"}
+                      alt={postUser.username}
+                      width={32}
+                      height={32}
                       className="object-cover"
                     />
                   </div>
                 </div>
                 <div className="flex-1">
                   <div className="mb-1">
-                    <span className="font-semibold text-sm mr-2">{post.user.username}</span>
+                    <span className="font-semibold text-sm mr-2">{postUser.username}</span>
                     <span className="text-sm">{post.content}</span>
                   </div>
-                  <p className="text-xs text-gray-500">{post.date}</p>
+                  <p className="text-xs text-gray-500">
+                    {formatDistanceToNowStrict(post.createdAt, { addSuffix: true })}
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Comments Section - Scrollable */}
-            <div 
-              className="flex-grow overflow-y-auto p-4"
-              ref={commentsContainerRef}
-            >
-              <h3 className="font-semibold mb-4">Comments</h3>
-              {dummyComments.map((comment, index) => (
-                <div key={index} className="flex mb-4 p-3 bg-base-200 rounded-lg">
+            <div className="flex-grow overflow-y-auto p-4" ref={commentsContainerRef}>
+              <h3 className="font-semibold mb-4">Comments ({dummyComments.length})</h3>
+              {dummyComments.map((comment) => (
+                <div key={comment._id} className="flex mb-4 p-3 bg-base-200 rounded-lg">
                   <div className="avatar mr-3">
                     <div className="w-8 h-8 rounded-full overflow-hidden">
                       <Image
-                        src={comment.user.avatar}
+                        src={comment.user.profilePic}
                         alt={comment.user.name}
                         width={32}
                         height={32}
@@ -392,16 +349,22 @@ export default function SinglePostModal({ post, onClose, initialImageIndex = 0 }
                   <div className="flex-1">
                     <div className="flex items-center mb-1">
                       <span className="font-semibold text-sm mr-2">{comment.user.username}</span>
-                      <span className="text-sm">{comment.comment}</span>
+                      <span className="text-sm">{comment.content}</span>
                     </div>
-                    <p className="text-xs text-gray-500">{comment.date}</p>
-                    
+                    <p className="text-xs text-gray-500">
+                      {formatDistanceToNowStrict(comment.createdAt, { addSuffix: true })}
+                    </p>
+
                     <div className="flex items-center mt-1 space-x-3">
                       <button className="text-xs text-gray-500">Like</button>
                       <button className="text-xs text-gray-500">Reply</button>
                     </div>
                   </div>
-                  <button className="btn btn-ghost btn-sm p-0 hover:bg-transparent self-start">
+                  <button
+                    type="button"
+                    title="Like this comment"
+                    className="btn btn-ghost btn-sm p-0 hover:bg-transparent self-start"
+                  >
                     <Heart size={14} />
                   </button>
                 </div>
@@ -413,23 +376,41 @@ export default function SinglePostModal({ post, onClose, initialImageIndex = 0 }
             <div className="p-4 border-t border-base-300">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex space-x-4">
-                  <button className="btn btn-ghost btn-sm p-0 hover:bg-transparent">
+                  <button
+                    type="button"
+                    title="Like this post"
+                    className="btn btn-ghost btn-sm p-0 hover:bg-transparent"
+                  >
                     <Heart size={24} />
                   </button>
-                  <button className="btn btn-ghost btn-sm p-0 hover:bg-transparent">
+                  <button
+                    type="button"
+                    title="Comment on this post"
+                    className="btn btn-ghost btn-sm p-0 hover:bg-transparent"
+                  >
                     <MessageCircle size={24} />
                   </button>
-                  <button className="btn btn-ghost btn-sm p-0 hover:bg-transparent">
+                  <button
+                    type="button"
+                    title="Share this post"
+                    className="btn btn-ghost btn-sm p-0 hover:bg-transparent"
+                  >
                     <Share size={24} />
                   </button>
                 </div>
-                <button className="btn btn-ghost btn-sm p-0 hover:bg-transparent">
+                <button
+                  type="button"
+                  title="Save this post"
+                  className="btn btn-ghost btn-sm p-0 hover:bg-transparent"
+                >
                   <Bookmark size={24} />
                 </button>
               </div>
 
-              <p className="text-sm font-semibold mb-2">{post.likes} likes</p>
-              <p className="text-xs text-gray-400 uppercase">{post.date}</p>
+              <p className="text-sm font-semibold mb-2">{post.votesCount} likes</p>
+              <p className="text-xs text-gray-400 uppercase">
+                {formatDistanceToNowStrict(post.createdAt, { addSuffix: true })}
+              </p>
             </div>
 
             {/* Add Comment - Fixed at bottom */}
@@ -442,10 +423,12 @@ export default function SinglePostModal({ post, onClose, initialImageIndex = 0 }
                   placeholder="Add a comment..."
                   value={newComment}
                   onChange={handleCommentChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handlePostComment()}
+                  onKeyDown={(e) => e.key === "Enter" && handlePostComment()}
                 />
-                <button 
-                  className={`btn btn-ghost btn-sm ${newComment ? 'text-primary' : 'text-blue-200'}`}
+                <button
+                  type="button"
+                  title="Post Comment"
+                  className={`btn btn-ghost btn-sm ${newComment ? "text-primary" : "text-blue-200"}`}
                   onClick={handlePostComment}
                   disabled={!newComment}
                 >
