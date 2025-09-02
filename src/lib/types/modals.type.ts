@@ -24,14 +24,10 @@ export interface IPost extends Document {
   content: string;
   location: string | null;
   images: string[];
-  votes: {
-    upvotes: ObjectId[];
-    downvotes: ObjectId[];
-    voteCount: number;
-  };
   commentsCount: number;
   votesCount: number;
   visibility: string;
+  isEdited: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,6 +71,14 @@ export interface ISavedPost extends Document {
 export interface IFollow extends Document {
   follower: ObjectId;
   following: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IVote extends Document {
+  post: ObjectId;
+  user: ObjectId;
+  value: number; // 1 for upvote, -1 for downvote
   createdAt: Date;
   updatedAt: Date;
 }

@@ -4,10 +4,11 @@ import { connectDB } from "@/lib/db/db.config";
 import Post from "@/lib/db/models/post.model";
 import { revalidatePath } from "next/cache";
 import { getUserByClerkId } from "./util.action";
-import { IPost } from "@/lib/types/modals.type";
+import { IPost, IUser, IVote } from "@/lib/types/modals.type";
 import Comment from "@/lib/db/models/comment.modal";
 import SavedPost from "@/lib/db/models/savedPost.modal";
 import Notification from "@/lib/db/models/notification.modal";
+import Vote from "@/lib/db/models/vote.model";
 
 export type PostFormState = {
   success: boolean;
@@ -101,6 +102,7 @@ export async function deletePost(postId: string) {
     await Comment.deleteMany({ post: postId });
     await SavedPost.deleteMany({ post: postId });
     await Notification.deleteMany({ post: postId });
+    await Vote.deleteMany({ post: postId });
     await Post.findByIdAndDelete(postId);
     revalidatePath("/");
 
@@ -112,11 +114,76 @@ export async function deletePost(postId: string) {
   }
 }
 
+// TODO: check below function
 export async function updatePost(postId: string, post: IPost) {
   try {
     await connectDB();
     await Post.findByIdAndUpdate(postId, post);
     revalidatePath("/");
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function giveUpvote(postId: string) {
+  try {
+    await connectDB();
+    const user = await getUserByClerkId();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const post: IPost | null = await Post.findById(postId);
+
+    console.log(post);
+
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    const isAlreadyUpvoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+
+    if (isAlreadyUpvoted) {
+      await Vote.findOneAndDelete({ post: post._id, user: user._id });
+      post.votesCount -= 1;
+    } else {
+      const newVote = await new Vote({ post: post._id, user: user._id, value: 1 });
+      await newVote.save();
+      post.votesCount += 1;
+    }
+
+    await post.save();
+    revalidatePath("/");
+
+    return { success: true, message: "Post liked successfully!" };
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function checkIfUpvoted(postId: string): Promise<boolean> {
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const post: IPost | null = await Post.findById(postId);
+
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    const isAlreadyUpvoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+
+    return !!isAlreadyUpvoted;
   } catch (err) {
     console.error(err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";

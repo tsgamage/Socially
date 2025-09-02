@@ -26,19 +26,17 @@ export default async function RootLayout({
 
   return (
     <QueryProvider>
-      <html lang="en">
-        <body className={`antialiased h-screen overflow-hidden flex flex-col`}>
-          <Navbar />
-          <div className="flex flex-1 overflow-hidden">
-            <LeftSideBar />
-            <main className="flex-1 p-4 overflow-y-auto">{children}</main>
-            <RightSideBar />
-          </div>
-          <div className="md:hidden">
-            <Dock />
-          </div>
-        </body>
-      </html>
+      <main className={`antialiased h-screen overflow-hidden flex flex-col`}>
+        <Navbar />
+        <div className="flex flex-1 overflow-hidden">
+          <LeftSideBar />
+          <main className="flex-1 p-4 overflow-y-auto">{children}</main>
+          <RightSideBar />
+        </div>
+        <div className="md:hidden">
+          <Dock />
+        </div>
+      </main>
     </QueryProvider>
   );
 }

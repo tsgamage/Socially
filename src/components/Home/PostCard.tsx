@@ -15,12 +15,12 @@ import {
   Link2,
   Check,
 } from "lucide-react";
-import { IPost } from "@/lib/types/modals.type";
+import { IPost, IVote } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { deletePost } from "@/actions/post.actions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { checkIfUpvoted, deletePost, giveUpvote } from "@/actions/post.actions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import DeleteComfirmationModal from "../ui/modals/DeleteComfirmationsModal";
 
 interface PostCardProps {
@@ -65,6 +65,11 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
 
   const queryClient = useQueryClient();
 
+  const { data: upvoteData } = useQuery({
+    queryKey: ["isUpvoted", post._id],
+    queryFn: async () => await checkIfUpvoted(post._id as string),
+  });
+
   const { mutate: deletePostById, isPending: isDeleting } = useMutation({
     mutationFn: deletePost,
 
@@ -73,9 +78,43 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     },
   });
 
-  const handleDeletePost = () => {
-    deleteComfirmationModal.current?.showModal();
-  };
+  const { mutate: giveUpvoteForPost, isPending: isUpvoting } = useMutation({
+    mutationFn: giveUpvote,
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      //   getting the old data
+      const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
+      //   getting the post data
+      const post = allPosts!.filter((p) => p._id === postId)[0];
+      //     getting the upvote data
+      const isUpvoted = upvoteData;
+
+      //     updating the data based on the isUpvoted value
+      let updatedPost;
+      if (isUpvoted) {
+        updatedPost = { ...post, votesCount: post.votesCount - 1 };
+        queryClient.setQueryData(["isUpvoted", post._id], false);
+      } else {
+        updatedPost = { ...post, votesCount: post.votesCount + 1 };
+        queryClient.setQueryData(["isUpvoted", post._id], true);
+      }
+
+      //   removing the current post from the old data array
+      const updatedPosts = allPosts?.map((p) => (p._id === postId ? updatedPost : p));
+
+      //   updating the query data
+      queryClient.setQueryData(["posts"], updatedPosts);
+      return { oldPostsData: allPosts, oldUpvotedData: upvoteData };
+    },
+    onError: (error, data, context) => {
+      queryClient.setQueryData(["posts"], context!.oldPostsData);
+      queryClient.setQueryData(["isUpvoted", post._id], context!.oldUpvotedData);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["isUpvoted", post._id] });
+    },
+  });
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -131,7 +170,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
                 </p>
                 <p className="text-xs text-gray-400 ml-1">-</p>
                 <p className="text-xs text-gray-400 ml-1">{post.visibility}</p>
-                {post.createdAt !== post.updatedAt && (
+                {post.isEdited && (
                   <>
                     <p className="text-xs text-gray-400 ml-1">-</p>
                     <p className="text-xs text-gray-400 ml-1">Edited</p>
@@ -163,7 +202,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
                 </>
 
                 <li className="text-red-500">
-                  <a title="Delete" onClick={() => handleDeletePost()}>
+                  <a title="Delete" onClick={() => deleteComfirmationModal.current?.showModal()}>
                     Delete
                   </a>
                 </li>
@@ -234,7 +273,10 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
                   <button
                     title="Give a Upvote"
                     type="button"
-                    className="cursor-pointer flex items-center gap-1 hover:bg-gray-800 w-full h-full rounded-l-full p-2 "
+                    className={`cursor-pointer flex items-center gap-1 w-full h-full rounded-l-full p-2  ${
+                      upvoteData ? "bg-blue-900/70" : "hover:bg-gray-800"
+                    }`}
+                    onClick={() => giveUpvoteForPost(post._id as string)}
                   >
                     <ArrowBigUpDash size={24} />
                     <p className="text-sm font-semibold mb-1">{post.votesCount}</p>

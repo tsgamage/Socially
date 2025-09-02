@@ -14,10 +14,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider appearance={{ theme: dark }}>
-      <html lang="en" data-theme="dark">
-        <body>{children}</body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" data-theme="dark">
+      <body>
+        <ClerkProvider appearance={{ theme: dark }}>{children}</ClerkProvider>
+      </body>
+    </html>
   );
 }
