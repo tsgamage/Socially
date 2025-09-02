@@ -144,21 +144,26 @@ export async function giveUpvote(postId: string) {
       throw new Error("Post not found");
     }
 
-    const isAlreadyUpvoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+    const isAlreadyVoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
 
-    if (isAlreadyUpvoted) {
-      await Vote.findOneAndDelete({ post: post._id, user: user._id });
-      post.votesCount -= 1;
-    } else {
-      const newVote = await new Vote({ post: post._id, user: user._id, value: 1 });
-      await newVote.save();
+    if (!isAlreadyVoted) {
+      await new Vote({ post: post._id, user: user._id, value: 1 }).save();
       post.votesCount += 1;
+    } else {
+      await Vote.findOneAndDelete({ post: post._id, user: user._id });
+      if (isAlreadyVoted.value === 1) {
+        post.votesCount -= 1;
+      } else if (isAlreadyVoted.value === -1) {
+        await new Vote({ post: post._id, user: user._id, value: 1 }).save();
+        // one for deleting previos downvote and one for adding new upvote
+        post.votesCount += 2;
+      }
     }
 
     await post.save();
     revalidatePath("/");
 
-    return { success: true, message: "Post liked successfully!" };
+    return { success: true, message: "Post Upvoted successfully!" };
   } catch (err) {
     console.error(err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";
@@ -166,7 +171,7 @@ export async function giveUpvote(postId: string) {
   }
 }
 
-export async function checkIfUpvoted(postId: string): Promise<boolean> {
+export async function giveDownvote(postId: string) {
   try {
     await connectDB();
     const user: IUser = await getUserByClerkId();
@@ -181,9 +186,51 @@ export async function checkIfUpvoted(postId: string): Promise<boolean> {
       throw new Error("Post not found");
     }
 
-    const isAlreadyUpvoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+    const isAlreadyVoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
 
-    return !!isAlreadyUpvoted;
+    if (!isAlreadyVoted) {
+      await new Vote({ post: post._id, user: user._id, value: -1 }).save();
+      post.votesCount -= 1;
+    } else {
+      await Vote.findOneAndDelete({ post: post._id, user: user._id });
+      if (isAlreadyVoted.value === -1) {
+        post.votesCount += 1;
+      } else if (isAlreadyVoted.value === 1) {
+        await new Vote({ post: post._id, user: user._id, value: -1 }).save();
+        // one for deleting previos upvote and one for adding new downvote
+        post.votesCount -= 2;
+      }
+    }
+
+    await post.save();
+    revalidatePath("/");
+
+    return { success: true, message: "Post Downvoted successfully!" };
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function checkIfUpvoted(postId: string): Promise<IVote | null> {
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const post: IPost | null = await Post.findById(postId);
+
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    const isAlreadyVoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+
+    return JSON.parse(JSON.stringify(isAlreadyVoted));
   } catch (err) {
     console.error(err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";

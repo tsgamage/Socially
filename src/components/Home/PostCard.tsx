@@ -14,12 +14,13 @@ import {
   X,
   Link2,
   Check,
+  Loader2,
 } from "lucide-react";
-import { IPost, IVote } from "@/lib/types/modals.type";
+import { IPost } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { checkIfUpvoted, deletePost, giveUpvote } from "@/actions/post.actions";
+import { checkIfUpvoted, deletePost, giveDownvote, giveUpvote } from "@/actions/post.actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import DeleteComfirmationModal from "../ui/modals/DeleteComfirmationsModal";
 
@@ -65,51 +66,89 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
 
   const queryClient = useQueryClient();
 
-  const { data: upvoteData } = useQuery({
+  const { data: voteData, isLoading: isVotesLoading } = useQuery({
     queryKey: ["isUpvoted", post._id],
-    queryFn: async () => await checkIfUpvoted(post._id as string),
+    queryFn: () => checkIfUpvoted(post._id as string),
   });
 
   const { mutate: deletePostById, isPending: isDeleting } = useMutation({
     mutationFn: deletePost,
-
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
 
-  const { mutate: giveUpvoteForPost, isPending: isUpvoting } = useMutation({
+  const { mutate: giveUpvoteForPost } = useMutation({
     mutationFn: giveUpvote,
-    onMutate: async (postId) => {
-      await queryClient.cancelQueries({ queryKey: ["posts"] });
-      //   getting the old data
-      const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
-      //   getting the post data
-      const post = allPosts!.filter((p) => p._id === postId)[0];
-      //     getting the upvote data
-      const isUpvoted = upvoteData;
+    // onMutate: async (postId) => {
+    //   await queryClient.cancelQueries({ queryKey: ["posts"] });
+    //   //   getting the old data
+    //   const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
+    //   //   getting the post data
+    //   const post = allPosts!.filter((p) => p._id === postId)[0];
+    //   //     getting the upvote data
+    //   const isVoted = voteData;
 
-      //     updating the data based on the isUpvoted value
-      let updatedPost;
-      if (isUpvoted) {
-        updatedPost = { ...post, votesCount: post.votesCount - 1 };
-        queryClient.setQueryData(["isUpvoted", post._id], false);
-      } else {
-        updatedPost = { ...post, votesCount: post.votesCount + 1 };
-        queryClient.setQueryData(["isUpvoted", post._id], true);
-      }
+    //   //     updating the data based on the isUpvoted value
+    //   let updatedPost;
+    //   if (isVoted) {
+    //     updatedPost = { ...post, votesCount: post.votesCount - 1 };
+    //     queryClient.setQueryData(["isUpvoted", post._id], { ...isVoted, value: -1 });
+    //   } else {
+    //     updatedPost = { ...post, votesCount: post.votesCount + 1 };
+    //     queryClient.setQueryData(["isUpvoted", post._id], { ...isVoted, value: 1 });
+    //   }
 
-      //   removing the current post from the old data array
-      const updatedPosts = allPosts?.map((p) => (p._id === postId ? updatedPost : p));
+    //   //   removing the current post from the old data array
+    //   const updatedPosts = allPosts?.map((p) => (p._id === postId ? updatedPost : p));
 
-      //   updating the query data
-      queryClient.setQueryData(["posts"], updatedPosts);
-      return { oldPostsData: allPosts, oldUpvotedData: upvoteData };
+    //   //   updating the query data
+    //   queryClient.setQueryData(["posts"], updatedPosts);
+    //   return { oldPostsData: allPosts, oldUpvotedData: isVoted };
+    // },
+    // onError: (error, data, context) => {
+    //   queryClient.setQueryData(["posts"], context!.oldPostsData);
+    //   queryClient.setQueryData(["isUpvoted", post._id], context!.oldUpvotedData);
+    // },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["isUpvoted", post._id] });
     },
-    onError: (error, data, context) => {
-      queryClient.setQueryData(["posts"], context!.oldPostsData);
-      queryClient.setQueryData(["isUpvoted", post._id], context!.oldUpvotedData);
-    },
+  });
+
+  const { mutate: giveDownvoteForPost } = useMutation({
+    mutationFn: giveDownvote,
+    // onMutate: async (postId) => {
+    //   await queryClient.cancelQueries({ queryKey: ["posts"] });
+    //   //   getting the old data
+    //   const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
+    //   //   getting the post data
+    //   const post = allPosts!.filter((p) => p._id === postId)[0];
+
+    //   //     getting the upvote data
+    //   const isVoted = voteData;
+
+    //   //     updating the data based on the isUpvoted value
+    //   let updatedPost;
+    //   if (isVoted) {
+    //     updatedPost = { ...post, votesCount: post.votesCount - 1 };
+    //     queryClient.setQueryData(["isUpvoted", post._id], { ...isVoted, value: -1 });
+    //   } else {
+    //     updatedPost = { ...post, votesCount: post.votesCount + 1 };
+    //     queryClient.setQueryData(["isUpvoted", post._id], { ...isVoted, value: -1 });
+    //   }
+
+    //   //   removing the current post from the old data array
+    //   const updatedPosts = allPosts?.map((p) => (p._id === postId ? updatedPost : p));
+
+    //   //   updating the query data
+    //   queryClient.setQueryData(["posts"], updatedPosts);
+    //   return { oldPostsData: allPosts, oldUpvotedData: isVoted };
+    // },
+    // onError: (error, data, context) => {
+    //   queryClient.setQueryData(["posts"], context!.oldPostsData);
+    //   queryClient.setQueryData(["isUpvoted", post._id], context!.oldUpvotedData);
+    // },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["isUpvoted", post._id] });
@@ -130,6 +169,9 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     onClick(index);
   };
 
+  console.log("voteData", voteData);
+  console.log("isvotesLoading", isVotesLoading);
+
   return (
     <>
       <DeleteComfirmationModal
@@ -143,6 +185,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
         description="Are you sure you want to delete this post?"
       />
       <div className="card xl:w-10/12 bg-base-500 shadow-md border border-base-content/10 rounded-xl mb-6 overflow-hidden mx-auto">
+        {voteData?.toString()}
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b-1 border-base-content/10">
           <div className="flex items-center">
@@ -265,30 +308,34 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
         )}
 
         {/* Actions */}
-        <div className="p-3">
+        <div className="p-3 text-gray-400">
           <div className="flex justify-between items-center mb-2 ">
             <div className="flex space-x-4">
-              <div className="flex items-center justify-between w-auto space-x-2 bg-gray-900/70  rounded-full ">
+              <div className="flex items-center justify-between w-auto bg-gray-900/70  rounded-full">
                 <div className="tooltip" data-tip="Upvote">
                   <button
                     title="Give a Upvote"
                     type="button"
-                    className={`cursor-pointer flex items-center gap-1 w-full h-full rounded-l-full p-2  ${
-                      upvoteData ? "bg-blue-900/70" : "hover:bg-gray-800"
+                    className={`group cursor-pointer flex items-center gap-1 w-full h-full rounded-l-full p-2 pr-4  ${
+                      voteData?.value === 1 ? "bg-blue-900/70" : "hover:bg-gray-800"
                     }`}
                     onClick={() => giveUpvoteForPost(post._id as string)}
                   >
-                    <ArrowBigUpDash size={24} />
-                    <p className="text-sm font-semibold mb-1">{post.votesCount}</p>
+                    <ArrowBigUpDash className={voteData?.value === 1 ? "text-blue-500" : ""} size={24} />
+                    {!isVotesLoading && <p className="text-sm font-semibold mb-1">{post.votesCount}</p>}
+                    {isVotesLoading && <Loader2 className="animate-spin" size={18} />}
                   </button>
                 </div>
                 <div className="tooltip" data-tip="Downvote">
                   <button
                     title="Give a Downvote"
                     type="button"
-                    className="cursor-pointer flex items-center gap-1 hover:bg-gray-800 w-full h-full rounded-r-full p-2 "
+                    className={`cursor-pointer flex items-center gap-1 w-full h-full rounded-r-full p-2 ${
+                      voteData?.value === -1 ? "bg-red-900/70" : "hover:bg-gray-800"
+                    }`}
+                    onClick={() => giveDownvoteForPost(post._id as string)}
                   >
-                    <ArrowBigDownDash scale={24} />
+                    <ArrowBigDownDash className={voteData?.value === -1 ? "text-red-500/80" : ""} scale={24} />
                   </button>
                 </div>
               </div>
