@@ -4,7 +4,7 @@ import Image from "next/image";
 import React, { useActionState, useRef, useState } from "react";
 import { ImageIcon, X } from "lucide-react";
 import UserAvatar from "./UserAvatar";
-import { QueryClient, useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function CreatePost() {
   const input = useRef<HTMLInputElement>(null);
@@ -38,9 +38,9 @@ export default function CreatePost() {
     setImages(images.filter((_, i) => i !== index));
   }
 
-  const queryClient = new QueryClient();
+  const queryClient = useQueryClient();
 
-  const { mutate } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: createPost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
@@ -51,7 +51,11 @@ export default function CreatePost() {
   });
 
   const createPostAction = async (preState: PostFormState, formData: FormData) => {
+    setImages([]);
+    setTextareaValue("");
+    setIsExpanded(false);
     await mutate(formData);
+
     return {
       success: false,
       message: "",
@@ -215,8 +219,8 @@ export default function CreatePost() {
               <ImageIcon size={20} />
             </button>
 
-            <button type="submit" className="btn btn-primary px-6" disabled={textareaValue.length < 5}>
-              Post
+            <button type="submit" className="btn btn-primary px-6" disabled={textareaValue.length < 5 || isPending}>
+              {isPending ? "Posting..." : "Post"}
             </button>
           </div>
         </form>

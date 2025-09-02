@@ -86,13 +86,15 @@ export async function deletePost(postId: string) {
       throw new Error("Unauthorized");
     }
 
-    const post = await Post.findById(postId);
+    const post: IPost | null = await Post.findById(postId);
+
+    console.log(post?.user.toString());
 
     if (!post) {
       throw new Error("Post not found");
     }
 
-    if (post.user.toString() !== user._id) {
+    if (post.user.toString() !== user._id.toString()) {
       throw new Error("Unauthorized");
     }
 
@@ -101,6 +103,8 @@ export async function deletePost(postId: string) {
     await Notification.deleteMany({ post: postId });
     await Post.findByIdAndDelete(postId);
     revalidatePath("/");
+
+    return { success: true, message: "Post deleted successfully!" };
   } catch (err) {
     console.error(err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";
