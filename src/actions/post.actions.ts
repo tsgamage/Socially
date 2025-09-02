@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/db/db.config";
 import Post from "@/lib/db/models/post.model";
 import { revalidatePath } from "next/cache";
 import { getUserByClerkId } from "./util.action";
-import { IPost, IUser, IVote } from "@/lib/types/modals.type";
+import { IPost, ISavedPost, IUser, IVote } from "@/lib/types/modals.type";
 import Comment from "@/lib/db/models/comment.modal";
 import SavedPost from "@/lib/db/models/savedPost.modal";
 import Notification from "@/lib/db/models/notification.modal";
@@ -16,6 +16,7 @@ export type PostFormState = {
   content?: string;
 };
 
+// * Post handling functions
 export async function createPost(formData: FormData): Promise<PostFormState> {
   const content = formData.get("content") as string;
   if (!content) {
@@ -127,6 +128,7 @@ export async function updatePost(postId: string, post: IPost) {
   }
 }
 
+// * Vote handling functions
 export async function giveUpvote(postId: string) {
   try {
     await connectDB();
@@ -213,7 +215,7 @@ export async function giveDownvote(postId: string) {
   }
 }
 
-export async function checkIfUpvoted(postId: string): Promise<IVote | null> {
+export async function isAlreadyVoted(postId: string): Promise<IVote | null> {
   try {
     await connectDB();
     const user: IUser = await getUserByClerkId();
@@ -228,9 +230,68 @@ export async function checkIfUpvoted(postId: string): Promise<IVote | null> {
       throw new Error("Post not found");
     }
 
-    const isAlreadyVoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+    const vote: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
 
-    return JSON.parse(JSON.stringify(isAlreadyVoted));
+    return JSON.parse(JSON.stringify(vote));
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function toggleSavePost(postId: string) {
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const post: IPost | null = await Post.findById(postId);
+
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    const isAlreadySaved: ISavedPost | null = await SavedPost.findOne({ post: post._id, user: user._id });
+
+    if (!isAlreadySaved) {
+      await new SavedPost({ post: post._id, user: user._id }).save();
+    } else {
+      await SavedPost.findOneAndDelete({ post: post._id, user: user._id });
+    }
+
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+
+export async function isPostSaved(postId: string): Promise<ISavedPost | null> {
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const post: IPost | null = await Post.findById(postId);
+
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    const savedPost: ISavedPost | null = await SavedPost.findOne({ post: post._id, user: user._id });
+
+    return JSON.parse(JSON.stringify(savedPost));
   } catch (err) {
     console.error(err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";

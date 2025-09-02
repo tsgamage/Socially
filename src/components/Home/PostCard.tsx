@@ -20,7 +20,14 @@ import { IPost } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { checkIfUpvoted, deletePost, giveDownvote, giveUpvote } from "@/actions/post.actions";
+import {
+  isAlreadyVoted,
+  deletePost,
+  giveDownvote,
+  giveUpvote,
+  isPostSaved,
+  toggleSavePost,
+} from "@/actions/post.actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import DeleteComfirmationModal from "../ui/modals/DeleteComfirmationsModal";
 
@@ -67,8 +74,13 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
   const queryClient = useQueryClient();
 
   const { data: voteData, isLoading: isVotesLoading } = useQuery({
-    queryKey: ["isUpvoted", post._id],
-    queryFn: () => checkIfUpvoted(post._id as string),
+    queryKey: ["votedPosts", post._id],
+    queryFn: () => isAlreadyVoted(post._id as string),
+  });
+
+  const { data: savedPostData, isLoading: isSavedPostLoading } = useQuery({
+    queryKey: ["savedPosts", post._id],
+    queryFn: () => isPostSaved(post._id as string),
   });
 
   const { mutate: deletePostById, isPending: isDeleting } = useMutation({
@@ -89,14 +101,14 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     //   //     getting the upvote data
     //   const isVoted = voteData;
 
-    //   //     updating the data based on the isUpvoted value
+    //   //     updating the data based on the votedPosts value
     //   let updatedPost;
     //   if (isVoted) {
     //     updatedPost = { ...post, votesCount: post.votesCount - 1 };
-    //     queryClient.setQueryData(["isUpvoted", post._id], { ...isVoted, value: -1 });
+    //     queryClient.setQueryData(["votedPosts", post._id], { ...isVoted, value: -1 });
     //   } else {
     //     updatedPost = { ...post, votesCount: post.votesCount + 1 };
-    //     queryClient.setQueryData(["isUpvoted", post._id], { ...isVoted, value: 1 });
+    //     queryClient.setQueryData(["votedPosts", post._id], { ...isVoted, value: 1 });
     //   }
 
     //   //   removing the current post from the old data array
@@ -108,11 +120,11 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     // },
     // onError: (error, data, context) => {
     //   queryClient.setQueryData(["posts"], context!.oldPostsData);
-    //   queryClient.setQueryData(["isUpvoted", post._id], context!.oldUpvotedData);
+    //   queryClient.setQueryData(["votedPosts", post._id], context!.oldUpvotedData);
     // },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["isUpvoted", post._id] });
+      queryClient.invalidateQueries({ queryKey: ["votedPosts", post._id] });
     },
   });
 
@@ -128,14 +140,14 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     //   //     getting the upvote data
     //   const isVoted = voteData;
 
-    //   //     updating the data based on the isUpvoted value
+    //   //     updating the data based on the votedPosts value
     //   let updatedPost;
     //   if (isVoted) {
     //     updatedPost = { ...post, votesCount: post.votesCount - 1 };
-    //     queryClient.setQueryData(["isUpvoted", post._id], { ...isVoted, value: -1 });
+    //     queryClient.setQueryData(["votedPosts", post._id], { ...isVoted, value: -1 });
     //   } else {
     //     updatedPost = { ...post, votesCount: post.votesCount + 1 };
-    //     queryClient.setQueryData(["isUpvoted", post._id], { ...isVoted, value: -1 });
+    //     queryClient.setQueryData(["votedPosts", post._id], { ...isVoted, value: -1 });
     //   }
 
     //   //   removing the current post from the old data array
@@ -147,11 +159,19 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     // },
     // onError: (error, data, context) => {
     //   queryClient.setQueryData(["posts"], context!.oldPostsData);
-    //   queryClient.setQueryData(["isUpvoted", post._id], context!.oldUpvotedData);
+    //   queryClient.setQueryData(["votedPosts", post._id], context!.oldUpvotedData);
     // },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["isUpvoted", post._id] });
+      queryClient.invalidateQueries({ queryKey: ["votedPosts", post._id] });
+    },
+  });
+
+  const { mutate: togglePostSave } = useMutation({
+    mutationFn: toggleSavePost,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["savedPosts"] });
     },
   });
 
@@ -169,9 +189,6 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     onClick(index);
   };
 
-  console.log("voteData", voteData);
-  console.log("isvotesLoading", isVotesLoading);
-
   return (
     <>
       <DeleteComfirmationModal
@@ -185,7 +202,6 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
         description="Are you sure you want to delete this post?"
       />
       <div className="card xl:w-10/12 bg-base-500 shadow-md border border-base-content/10 rounded-xl mb-6 overflow-hidden mx-auto">
-        {voteData?.toString()}
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b-1 border-base-content/10">
           <div className="flex items-center">
@@ -356,16 +372,15 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
               </div>
             </div>
             <div className="flex space-x-4">
-              <div className="tooltip" data-tip="Save Post">
+              <div className="tooltip" data-tip={`${savedPostData ? "Unsave Post" : "Save Post"}`}>
                 <button
                   title="Bookmark Button"
                   type="button"
                   className="bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
-                  onClick={() => {
-                    onBookmarkClick();
-                  }}
+                  onClick={() => togglePostSave(post._id as string)}
                 >
-                  <Bookmark size={24} />
+                  {isSavedPostLoading && <Loader2 className="animate-spin" size={24} />}
+                  {!isSavedPostLoading && <Bookmark className={`${savedPostData ? "fill-gray-400" : ""}`} size={24} />}
                 </button>
               </div>
               <div
