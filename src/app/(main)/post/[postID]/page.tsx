@@ -1,80 +1,63 @@
+"use client";
+import { getPostById } from "@/actions/post.actions";
 import SinglePostModal from "@/components/main/SinglePostModal";
-import { redirect } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2Icon } from "lucide-react";
+import { redirect, useSearchParams } from "next/navigation";
 
 // Reusing dummyPosts for content
 const dummyPosts = [
   {
-    id: "1",
-    user: {
-      name: "John Doe",
-      username: "john_doe",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-    },
-    date: "August 28, 2025",
-    content: "Just enjoying the beautiful weather today! ☀️",
-    images: ["https://picsum.photos/id/1015/1000/600"],
-    likes: 120,
-    comments: 15,
-  },
-  {
-    id: "2",
-    user: {
-      name: "Jane Smith",
-      username: "jane_smith",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-    },
-    date: "August 27, 2025",
-    content: "Had a great time at the beach with friends! 🏖️",
+    _id: "68b06482da6cda4e4e360d97",
+    user: "68b03eeaef03cebcdbfc5cbe",
+    content: "Princessssssssssssssssss 🤍",
     images: [
-      "https://picsum.photos/id/1018/1000/600",
-      "https://picsum.photos/id/1019/1000/600",
+      "https://i.pinimg.com/736x/f7/25/17/f7251743d24deb52f2aec3173bf58923.jpg",
+      "https://www.pinterest.com/pin/3729612268517871/",
     ],
-    likes: 250,
-    comments: 30,
-  },
-  {
-    id: "3",
-    user: {
-      name: "Peter Jones",
-      username: "peter_jones",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d",
-    },
-    date: "August 26, 2025",
-    content: "Just finished a great book! Highly recommend it. 📚",
-    images: ["https://picsum.photos/id/1020/1000/600"],
-    likes: 80,
-    comments: 5,
-  },
-  {
-    id: "4",
-    user: {
-      name: "Mary Johnson",
-      username: "mary_j",
-      avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d",
-    },
-    date: "August 25, 2025",
-    content: "My new puppy is the cutest! ❤️",
-    images: [
-      "https://picsum.photos/id/1025/1000/600",
-      "https://picsum.photos/id/1026/1000/600",
-      "https://picsum.photos/id/1027/1000/600",
-    ],
-    likes: 300,
-    comments: 45,
+    commentsCount: 0,
+    votesCount: 0,
+    visibility: "public",
+    createdAt: "2025-08-28T14:15:30.479Z",
+    updatedAt: "2025-08-28T14:15:30.479Z",
+    __v: 0,
   },
 ];
 
-export default function SinglePost({ params }: { params: { postID: string } }) {
-  const post = dummyPosts.find((p) => p.id === params.postID);
+import React from "react";
 
-  if (!post) {
-    redirect("/"); // Redirect to home if post not found
+export default function SinglePost({ params }: { params: Promise<{ postId: string }> }) {
+  const { postId } = React.use(params);
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view");
+  const initialImage: number = searchParams.get("initialImage") as unknown as number;
+  console.log("view", view);
+  console.log("initialImage", initialImage);
+
+  const { data: post, isLoading } = useQuery({
+    queryKey: ["post", postId],
+    queryFn: () => getPostById(postId),
+  });
+
+  let content;
+  if (view === "comments") {
+    content = (
+      <SinglePostModal post={post} onClose={() => redirect("/")} showCommens initialImageIndex={initialImage - 1} />
+    );
+  } else {
+    content = <SinglePostModal post={post} onClose={() => redirect("/")} initialImageIndex={initialImage - 1} />;
   }
 
-  const handleClose = () => {
-    redirect("/"); // Redirect to home or previous page
-  };
+  return (
+    <div>
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center mt-10">
+          <Loader2Icon className="animate-spin mb-2" />
+          <p>Loading...</p>
+        </div>
+      )}
 
-  return <SinglePostModal post={post} onClose={handleClose} />;
+      {post && content}
+    </div>
+  );
 }
-

@@ -1,9 +1,10 @@
 "use client";
-import { createPost } from "@/actions/post.actions";
+import { createPost, PostFormState } from "@/actions/post.actions";
 import Image from "next/image";
 import React, { useActionState, useRef, useState } from "react";
 import { ImageIcon, X } from "lucide-react";
 import UserAvatar from "./UserAvatar";
+import { QueryClient, useMutation } from "@tanstack/react-query";
 
 export default function CreatePost() {
   const input = useRef<HTMLInputElement>(null);
@@ -17,9 +18,7 @@ export default function CreatePost() {
     if (!files) return;
 
     if (images.length + files.length > 4) {
-      alert(
-        `You can only upload a maximum of 4 images. You have already selected ${images.length}.`
-      );
+      alert(`You can only upload a maximum of 4 images. You have already selected ${images.length}.`);
       return;
     }
 
@@ -39,7 +38,28 @@ export default function CreatePost() {
     setImages(images.filter((_, i) => i !== index));
   }
 
-  const [formState, formAction] = useActionState(createPost, {
+  const queryClient = new QueryClient();
+
+  const { mutate } = useMutation({
+    mutationFn: createPost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      setImages([]);
+      setTextareaValue("");
+      setIsExpanded(false);
+    },
+  });
+
+  const createPostAction = async (preState: PostFormState, formData: FormData) => {
+    await mutate(formData);
+    return {
+      success: false,
+      message: "",
+      content: "",
+    };
+  };
+
+  const [formState, formAction] = useActionState(createPostAction, {
     success: false,
     message: "",
     content: "",
@@ -195,11 +215,7 @@ export default function CreatePost() {
               <ImageIcon size={20} />
             </button>
 
-            <button
-              type="submit"
-              className="btn btn-primary px-6"
-              disabled={textareaValue.length < 5}
-            >
+            <button type="submit" className="btn btn-primary px-6" disabled={textareaValue.length < 5}>
               Post
             </button>
           </div>

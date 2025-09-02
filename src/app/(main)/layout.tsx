@@ -8,8 +8,6 @@ import LeftSideBar from "@/components/ui/LeftSideBar";
 import RightSideBar from "@/components/ui/RightSideBar";
 import Dock from "@/components/ui/Dock";
 import QueryProvider from "@/util/providers/tanstack.provider";
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { getAllPosts } from "@/actions/post.actions";
 
 export const metadata: Metadata = {
   title: "Socially",
@@ -26,32 +24,21 @@ export default async function RootLayout({
     return redirect("/login");
   }
 
-  const queryClient = new QueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ["posts"],
-    queryFn: getAllPosts,
-  });
-
   return (
-    <ClerkProvider>
-      <QueryProvider>
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <html lang="en">
-            <body className={`antialiased h-screen overflow-hidden flex flex-col`}>
-              <Navbar />
-              <div className="flex flex-1 overflow-hidden">
-                <LeftSideBar />
-                <main className="flex-1 p-4 overflow-y-auto">{children}</main>
-                <RightSideBar />
-              </div>
-              <div className="md:hidden">
-                <Dock />
-              </div>
-            </body>
-          </html>
-        </HydrationBoundary>
-      </QueryProvider>
-    </ClerkProvider>
+    <QueryProvider>
+      <html lang="en">
+        <body className={`antialiased h-screen overflow-hidden flex flex-col`}>
+          <Navbar />
+          <div className="flex flex-1 overflow-hidden">
+            <LeftSideBar />
+            <main className="flex-1 p-4 overflow-y-auto">{children}</main>
+            <RightSideBar />
+          </div>
+          <div className="md:hidden">
+            <Dock />
+          </div>
+        </body>
+      </html>
+    </QueryProvider>
   );
 }

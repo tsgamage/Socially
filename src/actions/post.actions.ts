@@ -15,10 +15,7 @@ export type PostFormState = {
   content?: string;
 };
 
-export async function createPost(
-  preState: PostFormState,
-  formData: FormData
-): Promise<PostFormState> {
+export async function createPost(formData: FormData): Promise<PostFormState> {
   const content = formData.get("content") as string;
   if (!content) {
     return { success: false, message: "Post content cannot be empty.", content };
@@ -48,9 +45,7 @@ export async function getPostById(postId: string) {
   console.log("getting post by postId", postId);
   try {
     await connectDB();
-    const post = await Post.findById(postId)
-      .populate("user", "name username clerkId profilePic")
-      .lean();
+    const post = await Post.findById(postId).populate("user", "name username clerkId profilePic").lean();
 
     return JSON.parse(JSON.stringify(post));
   } catch (err) {

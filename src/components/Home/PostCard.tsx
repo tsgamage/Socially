@@ -13,6 +13,7 @@ import {
   MessageSquare,
   SendHorizontal,
   X,
+  Link2,
 } from "lucide-react";
 import { IPost } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -23,12 +24,15 @@ interface PostCardProps {
   post: IPost;
   onClick: (imageIndex?: number) => void;
   onCommentClick: () => void;
+  onCopyLinkClick: (currentImageIndex: number) => void;
+  onBookmarkClick: () => void;
 }
 
-export default function PostCard({ post, onClick, onCommentClick }: PostCardProps) {
+export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClick, onBookmarkClick }: PostCardProps) {
   const { user: clerkUser } = useUser();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCommentInput, setShowCommentInput] = useState(false);
+  const [isCopyLinkClicked, setIsCopyLinkClicked] = useState(false);
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,17 +67,12 @@ export default function PostCard({ post, onClick, onCommentClick }: PostCardProp
             </div>
           </div>
           <div>
-            <Link
-              href={`/profile/${post.user.username}`}
-              className="hover:underline hover:text-gray-300"
-            >
+            <Link href={`/profile/${post.user.username}`} className="hover:underline hover:text-gray-300">
               <p className="text-sm font-semibold">{post.user.name}</p>
             </Link>
             <p className="text-sm text-gray-400">@{post.user.username}</p>
             <div className="flex">
-              <p className="text-xs text-gray-400">
-                {formatDistanceToNowStrict(post.createdAt, { addSuffix: true })}
-              </p>
+              <p className="text-xs text-gray-400">{formatDistanceToNowStrict(post.createdAt, { addSuffix: true })}</p>
               <p className="text-xs text-gray-400 ml-1">-</p>
               <p className="text-xs text-gray-400 ml-1">{post.visibility}</p>
               {post.createdAt !== post.updatedAt && (
@@ -97,10 +96,7 @@ export default function PostCard({ post, onClick, onCommentClick }: PostCardProp
             <div tabIndex={0} title="More" role="button" className="btn btn-ghost btn-circle">
               <MoreHorizontal size={20} />
             </div>
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
-            >
+            <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
               <>
                 <li>
                   <a>Edit</a>
@@ -116,10 +112,7 @@ export default function PostCard({ post, onClick, onCommentClick }: PostCardProp
             </ul>
           </div>
         ) : (
-          <div
-            className="btn btn-ghost btn-circle tooltip tooltip-error tooltip-left"
-            data-tip="Hide This Post"
-          >
+          <div className="btn btn-ghost btn-circle tooltip tooltip-error tooltip-left" data-tip="Hide This Post">
             <X size={20} />
           </div>
         )}
@@ -136,12 +129,7 @@ export default function PostCard({ post, onClick, onCommentClick }: PostCardProp
           className="relative aspect-square w-full bg-black cursor-pointer"
           onClick={() => handleImageClick(currentImageIndex)}
         >
-          <Image
-            src={post.images[currentImageIndex]}
-            alt="Post image"
-            fill
-            className="object-cover"
-          />
+          <Image src={post.images[currentImageIndex]} alt="Post image" fill className="object-cover" />
 
           {/* Navigation Arrows */}
           {post.images.length > 1 && (
@@ -216,20 +204,39 @@ export default function PostCard({ post, onClick, onCommentClick }: PostCardProp
                 }}
               >
                 <MessageSquare size={24} />
-                {post && post.commentsCount > 0 && (
-                  <p className="text-sm font-semibold mb-1">{post.commentsCount}</p>
-                )}
+                {post && post.commentsCount > 0 && <p className="text-sm font-semibold mb-1">{post.commentsCount}</p>}
               </button>
             </div>
           </div>
-          <div className="tooltip" data-tip="Save Post">
-            <button
-              title="Bookmark Button"
-              type="button"
-              className="bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
-            >
-              <Bookmark size={24} />
-            </button>
+          <div className="flex space-x-4">
+            <div className="tooltip" data-tip="Save Post">
+              <button
+                title="Bookmark Button"
+                type="button"
+                className="bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
+                onClick={() => {
+                  onBookmarkClick();
+                }}
+              >
+                <Bookmark size={24} />
+              </button>
+            </div>
+            <div className="tooltip tooltip-left" data-tip={isCopyLinkClicked ? "Copied!" : "Copy Link"}>
+              <button
+                title="Copy Link"
+                type="button"
+                className="flex items-center gap-2 bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
+                onDoubleClick={() => setShowCommentInput((preValue) => !preValue)}
+                onClick={() => {
+                  setIsCopyLinkClicked(true);
+                  onCopyLinkClick(currentImageIndex);
+                  setTimeout(() => setIsCopyLinkClicked(false), 1000);
+                }}
+              >
+                <Link2 size={24} />
+                {post && post.commentsCount > 0 && <p className="text-sm font-semibold mb-1">{post.commentsCount}</p>}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -243,11 +250,7 @@ export default function PostCard({ post, onClick, onCommentClick }: PostCardProp
               placeholder="Add a comment..."
               className="input input-ghost input-md w-full focus:outline-none"
             />
-            <button
-              type="button"
-              title="Post comment"
-              className="btn btn-ghost btn-circle text-primary"
-            >
+            <button type="button" title="Post comment" className="btn btn-ghost btn-circle text-primary">
               <SendHorizontal />
             </button>
           </div>
