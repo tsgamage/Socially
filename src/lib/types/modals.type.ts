@@ -1,4 +1,5 @@
 import { Document, ObjectId } from "mongoose";
+import { Interface } from "readline";
 
 export interface IUser extends Document {
   clerkId: string;
@@ -81,4 +82,9 @@ export interface IVote extends Document {
   value: number; // 1 for upvote, -1 for downvote
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IFetchedPost extends IPost {
+  vote: number | "unauthenticated";
+  isSaved: boolean | "unauthenticated";
 }

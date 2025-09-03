@@ -14,25 +14,17 @@ import {
   X,
   Link2,
   Check,
-  Loader2,
 } from "lucide-react";
-import { IPost, ISavedPost } from "@/lib/types/modals.type";
+import { IFetchedPost } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import {
-  deletePost,
-  giveDownvote,
-  giveUpvote,
-  isAlreadyVoted,
-  isPostSaved,
-  toggleSavePost,
-} from "@/actions/post.actions";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deletePost, giveDownvote, giveUpvote, toggleSavePost } from "@/actions/post.actions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DeleteComfirmationModal from "../ui/modals/DeleteComfirmationsModal";
 
 interface PostCardProps {
-  post: IPost;
+  post: IFetchedPost;
   onClick: (imageIndex?: number) => void;
   onCommentClick: () => void;
   onCopyLinkClick: (currentImageIndex: number) => void;
@@ -73,16 +65,6 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
 
   const queryClient = useQueryClient();
 
-  const { data: voteData, isLoading: isVotesLoading } = useQuery({
-    queryKey: ["votedPosts", post._id],
-    queryFn: () => isAlreadyVoted(post._id as string),
-  });
-
-  const { data: savedPostData, isLoading: isSavedPostLoading } = useQuery({
-    queryKey: ["savedPosts", post._id],
-    queryFn: () => isPostSaved(post._id as string),
-  });
-
   const { mutate: deletePostById, isPending: isDeleting } = useMutation({
     mutationFn: deletePost,
     onSuccess: () => {
@@ -94,37 +76,34 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     mutationFn: giveUpvote,
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["posts"] });
-      const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
-      const postIdx = allPosts?.findIndex((p) => p._id === postId);
-      const post = postIdx !== undefined && postIdx > -1 ? allPosts?.[postIdx] : undefined;
-      const prevVote = queryClient.getQueryData(["votedPosts", postId]);
-      if (post) {
-        let updatedPost;
-        if (voteData?.value === 1) {
-          updatedPost = { ...post, votesCount: post.votesCount - 1 };
-          queryClient.setQueryData(["votedPosts", postId], null);
-        } else if (voteData?.value === -1) {
-          updatedPost = { ...post, votesCount: post.votesCount + 2 };
-          queryClient.setQueryData(["votedPosts", postId], { ...voteData, value: 1 });
-        } else {
-          updatedPost = { ...post, votesCount: post.votesCount + 1 };
-          queryClient.setQueryData(["votedPosts", postId], { value: 1 });
-        }
-        if (allPosts && postIdx !== undefined && postIdx > -1) {
-          const updatedPosts = [...allPosts];
-          updatedPosts[postIdx] = updatedPost as IPost;
-          queryClient.setQueryData(["posts"], updatedPosts);
-        }
-      }
-      return { oldPosts: allPosts, oldVote: prevVote };
+
+      // Use functional update to avoid unnecessary array copies
+      const previousPosts = queryClient.getQueryData<IFetchedPost[]>(["posts"]);
+
+      queryClient.setQueryData<IFetchedPost[]>(["posts"], (oldPosts) => {
+        if (!oldPosts) return oldPosts;
+        return oldPosts.map((post) => {
+          if (post._id !== postId) return post;
+          // Only update the affected post
+          if (post.vote === 1) {
+            return { ...post, votesCount: post.votesCount - 1, vote: 0 } as IFetchedPost;
+          } else if (post.vote === -1) {
+            return { ...post, votesCount: post.votesCount + 2, vote: 1 } as IFetchedPost;
+          } else {
+            return { ...post, votesCount: post.votesCount + 1, vote: 1 } as IFetchedPost;
+          }
+        });
+      });
+
+      return { oldPosts: previousPosts };
     },
     onError: (err, postId, context) => {
-      if (context?.oldPosts) queryClient.setQueryData(["posts"], context.oldPosts);
-      if (context?.oldVote) queryClient.setQueryData(["votedPosts", postId], context.oldVote);
+      // Rollback to previous state if error
+      queryClient.setQueryData(["posts"], context?.oldPosts);
     },
-    onSettled: (data, error, postId) => {
-      queryClient.invalidateQueries({ queryKey: ["votedPosts", postId] });
-      queryClient.invalidateQueries({ queryKey: ["posts", postId] });
+    onSettled: () => {
+      // Optionally revalidate, but for efficiency, you may want to debounce or batch this
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
 
@@ -132,60 +111,56 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     mutationFn: giveDownvote,
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["posts"] });
-      const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
-      const postIdx = allPosts?.findIndex((p) => p._id === postId);
-      const post = postIdx !== undefined && postIdx > -1 ? allPosts?.[postIdx] : undefined;
-      const prevVote = queryClient.getQueryData(["votedPosts", postId]);
-      if (post) {
-        let updatedPost;
-        if (voteData?.value === -1) {
-          updatedPost = { ...post, votesCount: post.votesCount + 1 };
-          queryClient.setQueryData(["votedPosts", postId], null);
-        } else if (voteData?.value === 1) {
-          updatedPost = { ...post, votesCount: post.votesCount - 2 };
-          queryClient.setQueryData(["votedPosts", postId], { ...voteData, value: -1 });
-        } else {
-          updatedPost = { ...post, votesCount: post.votesCount - 1 };
-          queryClient.setQueryData(["votedPosts", postId], { value: -1 });
-        }
-        if (allPosts && postIdx !== undefined && postIdx > -1) {
-          const updatedPosts = [...allPosts];
-          updatedPosts[postIdx] = updatedPost as IPost;
-          queryClient.setQueryData(["posts"], updatedPosts);
-        }
-      }
-      return { oldPosts: allPosts, oldVote: prevVote };
+
+      // Use functional update to avoid unnecessary array copies
+      const previousPosts = queryClient.getQueryData<IFetchedPost[]>(["posts"]);
+
+      queryClient.setQueryData<IFetchedPost[]>(["posts"], (oldPosts) => {
+        if (!oldPosts) return oldPosts;
+        return oldPosts.map((post) => {
+          if (post._id !== postId) return post;
+          // Only update the affected post
+          if (post.vote === -1) {
+            return { ...post, votesCount: post.votesCount + 1, vote: 0 } as IFetchedPost;
+          } else if (post.vote === 1) {
+            return { ...post, votesCount: post.votesCount - 2, vote: -1 } as IFetchedPost;
+          } else {
+            return { ...post, votesCount: post.votesCount - 1, vote: -1 } as IFetchedPost;
+          }
+        });
+      });
+
+      return { oldPosts: previousPosts };
     },
     onError: (err, postId, context) => {
-      if (context?.oldPosts) queryClient.setQueryData(["posts"], context.oldPosts);
-      if (context?.oldVote) queryClient.setQueryData(["votedPosts", postId], context.oldVote);
+      // Rollback to previous state if error
+      queryClient.setQueryData(["posts"], context?.oldPosts);
     },
-    onSettled: (data, error, postId) => {
-      queryClient.invalidateQueries({ queryKey: ["votedPosts", postId] });
-      queryClient.invalidateQueries({ queryKey: ["posts", postId] });
+    onSettled: () => {
+      // Optionally revalidate, but for efficiency, you may want to debounce or batch this
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
 
   const { mutate: togglePostSave } = useMutation({
     mutationFn: toggleSavePost,
     onMutate: async (postId) => {
-      await queryClient.cancelQueries({ queryKey: ["savedPosts", postId] });
-      const isPostSaved: ISavedPost[] | undefined = queryClient.getQueryData(["savedPosts", postId]);
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      const allPosts: IFetchedPost[] | undefined = queryClient.getQueryData(["posts"]);
 
-      if (isPostSaved) {
-        queryClient.setQueryData(["savedPosts", postId], null);
-      } else {
-        queryClient.setQueryData(["savedPosts", postId], { postId });
-      }
-      return { oldPosts: isPostSaved };
+      console.log(allPosts);
+
+      const updatedPosts = allPosts?.map((p) => (p._id === postId ? { ...p, isSaved: !p.isSaved } : p));
+
+      queryClient.setQueryData(["posts"], updatedPosts);
+      return { oldPosts: allPosts };
     },
 
     onError: (err, postId, context) => {
-      queryClient.setQueryData(["savedPosts", postId], context!.oldPosts);
+      queryClient.setQueryData(["posts"], context!.oldPosts);
     },
 
     onSettled: (data, error, postId) => {
-      queryClient.invalidateQueries({ queryKey: ["savedPosts", postId] });
       queryClient.invalidateQueries({ queryKey: ["posts", postId] });
     },
   });
@@ -348,13 +323,12 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
                     title="Give a Upvote"
                     type="button"
                     className={`group cursor-pointer flex items-center gap-1 w-full h-full rounded-l-full p-2 pr-4  ${
-                      voteData?.value === 1 ? "bg-blue-900/70" : "hover:bg-gray-800"
+                      post.vote === 1 ? "bg-blue-900/70" : "hover:bg-gray-800"
                     }`}
                     onClick={() => giveUpvoteForPost(post._id as string)}
                   >
-                    <ArrowBigUpDash className={voteData?.value === 1 ? "text-blue-500" : ""} size={24} />
-                    {!isVotesLoading && <p className="text-sm font-semibold mb-1">{post.votesCount}</p>}
-                    {isVotesLoading && <Loader2 className="animate-spin" size={18} />}
+                    <ArrowBigUpDash className={post.vote === 1 ? "text-blue-500" : ""} size={24} />
+                    <p className="text-sm font-semibold mb-1">{post.votesCount}</p>
                   </button>
                 </div>
                 <div className="tooltip" data-tip="Downvote">
@@ -362,11 +336,11 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
                     title="Give a Downvote"
                     type="button"
                     className={`cursor-pointer flex items-center gap-1 w-full h-full rounded-r-full p-2 ${
-                      voteData?.value === -1 ? "bg-red-900/70" : "hover:bg-gray-800"
+                      post.vote === -1 ? "bg-red-900/70" : "hover:bg-gray-800"
                     }`}
                     onClick={() => giveDownvoteForPost(post._id as string)}
                   >
-                    <ArrowBigDownDash className={voteData?.value === -1 ? "text-red-500/80" : ""} scale={24} />
+                    <ArrowBigDownDash className={post.vote === -1 ? "text-red-500/80" : ""} scale={24} />
                   </button>
                 </div>
               </div>
@@ -387,15 +361,14 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
               </div>
             </div>
             <div className="flex space-x-4">
-              <div className="tooltip" data-tip={`${savedPostData ? "Unsave Post" : "Save Post"}`}>
+              <div className="tooltip" data-tip={`${post.isSaved ? "Unsave Post" : "Save Post"}`}>
                 <button
                   title="Bookmark Button"
                   type="button"
                   className="bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
                   onClick={() => togglePostSave(post._id as string)}
                 >
-                  {isSavedPostLoading && <Loader2 className="animate-spin" size={24} />}
-                  {!isSavedPostLoading && <Bookmark className={`${savedPostData ? "fill-gray-400" : ""}`} size={24} />}
+                  <Bookmark className={`${post.isSaved ? "fill-gray-400" : ""}`} size={24} />
                 </button>
               </div>
               <div

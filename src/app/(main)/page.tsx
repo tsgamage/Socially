@@ -3,7 +3,7 @@ import { getAllPosts } from "@/actions/post.actions";
 import CreatePost from "@/components/Home/CreatePost";
 import PostCard from "@/components/Home/PostCard";
 import SinglePostModal from "@/components/main/SinglePostModal";
-import { IPost } from "@/lib/types/modals.type";
+import { IFetchedPost, IPost } from "@/lib/types/modals.type";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
@@ -27,7 +27,7 @@ export default function Home() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setSelectedPost({} as IPost);
+    setSelectedPost({} as IFetchedPost);
     setInitialImageIndex(0);
     setIsCommentClicked(false);
   };
@@ -53,7 +53,7 @@ export default function Home() {
       )}
       <div>
         {!isLoading &&
-          data!.map((post: IPost, index: number) => (
+          data!.map((post: IFetchedPost, index: number) => (
             <PostCard
               key={index}
               post={post}

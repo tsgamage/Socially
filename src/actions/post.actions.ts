@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/db/db.config";
 import Post from "@/lib/db/models/post.model";
 import { revalidatePath } from "next/cache";
 import { getUserByClerkId } from "./util.action";
-import { IPost, ISavedPost, IUser, IVote } from "@/lib/types/modals.type";
+import { IFetchedPost, IPost, ISavedPost, IUser, IVote } from "@/lib/types/modals.type";
 import Comment from "@/lib/db/models/comment.modal";
 import SavedPost from "@/lib/db/models/savedPost.modal";
 import Notification from "@/lib/db/models/notification.modal";
@@ -43,21 +43,7 @@ export async function createPost(formData: FormData): Promise<PostFormState> {
   }
 }
 
-export async function getPostById(postId: string) {
-  console.log("getting post by postId", postId);
-  try {
-    await connectDB();
-    const post = await Post.findById(postId).populate("user", "name username clerkId profilePic").lean();
-
-    return JSON.parse(JSON.stringify(post));
-  } catch (err) {
-    console.error(err);
-    const message = err instanceof Error ? err.message : "An unknown error occurred.";
-    throw new Error(message);
-  }
-}
-
-export async function getAllPosts() {
+export async function getAllPosts(): Promise<IFetchedPost[]> {
   try {
     await connectDB();
     const user = await getUserByClerkId();
@@ -67,7 +53,43 @@ export async function getAllPosts() {
       .populate("user", "name username clerkId profilePic")
       .lean();
 
+    if (user) {
+      for (const post of posts) {
+        // Check if user has voted
+        const vote: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+        // 0 for no vote, 1 for upvote, -1 for downvote
+        if (vote) {
+          post.vote = vote.value;
+        } else {
+          post.vote = 0;
+        }
+
+        // Check if user has saved
+        const saved = await SavedPost.findOne({ post: post._id, user: user._id });
+        post.isSaved = !!saved;
+      }
+    } else {
+      for (const post of posts) {
+        post.vote = "unauthenticated";
+        post.isSaved = "unauthenticated";
+      }
+    }
+
     return JSON.parse(JSON.stringify(posts));
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function getPostById(postId: string) {
+  console.log("getting post by postId", postId);
+  try {
+    await connectDB();
+    const post = await Post.findById(postId).populate("user", "name username clerkId profilePic").lean();
+
+    return JSON.parse(JSON.stringify(post));
   } catch (err) {
     console.error(err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";
@@ -268,7 +290,6 @@ export async function toggleSavePost(postId: string) {
     throw new Error(message);
   }
 }
-
 
 export async function isPostSaved(postId: string): Promise<ISavedPost | null> {
   try {
