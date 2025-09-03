@@ -392,7 +392,6 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
                   }}
                 >
                   {isCopyLinkClicked ? <Check size={24} /> : <Link2 size={24} />}
-                  {post && post.commentsCount > 0 && <p className="text-sm font-semibold mb-1">{post.commentsCount}</p>}
                 </button>
               </div>
             </div>

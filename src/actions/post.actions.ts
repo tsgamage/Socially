@@ -4,11 +4,12 @@ import { connectDB } from "@/lib/db/db.config";
 import Post from "@/lib/db/models/post.model";
 import { revalidatePath } from "next/cache";
 import { getUserByClerkId } from "./util.action";
-import { IFetchedPost, IPost, ISavedPost, IUser, IVote } from "@/lib/types/modals.type";
+import { IComment, IFetchedPost, IPost, ISavedPost, IUser, IVote } from "@/lib/types/modals.type";
 import Comment from "@/lib/db/models/comment.modal";
 import SavedPost from "@/lib/db/models/savedPost.modal";
 import Notification from "@/lib/db/models/notification.modal";
 import Vote from "@/lib/db/models/vote.model";
+import xss from "xss";
 
 export type PostFormState = {
   success: boolean;
@@ -54,7 +55,7 @@ export async function getAllPosts(): Promise<IFetchedPost[]> {
       .lean();
 
     if (user) {
-      for (const post of posts) {
+      for (const post of posts as unknown as IFetchedPost[]) {
         // Check if user has voted
         const vote: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
         // 0 for no vote, 1 for upvote, -1 for downvote
@@ -67,6 +68,8 @@ export async function getAllPosts(): Promise<IFetchedPost[]> {
         // Check if user has saved
         const saved = await SavedPost.findOne({ post: post._id, user: user._id });
         post.isSaved = !!saved;
+
+        post.commentsCount = await Comment.countDocuments({ post: post._id });
       }
     } else {
       for (const post of posts) {
@@ -253,6 +256,7 @@ export async function isAlreadyVoted(postId: string): Promise<IVote | null> {
   }
 }
 
+// * SavedPost handling functions
 export async function toggleSavePost(postId: string) {
   try {
     await connectDB();
@@ -268,7 +272,10 @@ export async function toggleSavePost(postId: string) {
       throw new Error("Post not found");
     }
 
-    const isAlreadySaved: ISavedPost | null = await SavedPost.findOne({ post: post._id, user: user._id });
+    const isAlreadySaved: ISavedPost | null = await SavedPost.findOne({
+      post: post._id,
+      user: user._id,
+    });
 
     if (!isAlreadySaved) {
       await new SavedPost({ post: post._id, user: user._id }).save();
@@ -301,9 +308,96 @@ export async function isPostSaved(postId: string): Promise<ISavedPost | null> {
       throw new Error("Post not found");
     }
 
-    const savedPost: ISavedPost | null = await SavedPost.findOne({ post: post._id, user: user._id });
+    const savedPost: ISavedPost | null = await SavedPost.findOne({
+      post: post._id,
+      user: user._id,
+    });
 
     return JSON.parse(JSON.stringify(savedPost));
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+// * Comment handling functions
+
+export async function getComments(postId: string): Promise<IComment[]> {
+  try {
+    await connectDB();
+    const comments = await Comment.find({ post: postId, type: "comment" })
+      .sort({ createdAt: -1 })
+      .populate("user")
+      .lean();
+    console.log("comments", comments);
+    return JSON.parse(JSON.stringify(comments));
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function addComment(postId: string, comment: string) {
+  console.log(comment);
+  console.log(postId);
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const post: IPost | null = await Post.findById(postId);
+
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    if (!comment.trim()) {
+      throw new Error("Comment cannot be empty");
+    }
+
+    if (comment.length > 500) {
+      throw new Error("Comment cannot be longer than 500 characters");
+    }
+
+    const senitizedComment = xss(comment);
+
+    await new Comment({ post: post._id, user: user._id, content: senitizedComment }).save();
+
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function deleteComment(commentId: string) {
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const comment: IComment | null = await Comment.findById(commentId);
+
+    if (!comment) {
+      throw new Error("Comment not found");
+    }
+
+    await Comment.findByIdAndDelete(commentId);
+
+    revalidatePath("/");
+
+    return { success: true };
   } catch (err) {
     console.error(err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";

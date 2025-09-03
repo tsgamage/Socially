@@ -39,6 +39,7 @@ export interface IComment extends Document {
   content: string;
   type: string;
   parentComment: ObjectId | null;
+  repliesCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,4 +88,14 @@ export interface IVote extends Document {
 export interface IFetchedPost extends IPost {
   vote: number | "unauthenticated";
   isSaved: boolean | "unauthenticated";
+}
+
+export interface IFetchedComment extends Omit<IComment, "user"> {
+  user: {
+    clerkId: string;
+    username: string | null;
+    email: string;
+    name: string | null;
+    profilePic: string;
+  };
 }

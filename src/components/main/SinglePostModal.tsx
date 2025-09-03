@@ -14,88 +14,15 @@ import {
   ArrowBigDownDash,
   MessageSquareMore,
   MessageSquareOff,
+  Angry,
+  Frown,
+  MoreVertical,
 } from "lucide-react";
-import { IPost } from "@/lib/types/modals.type";
+import { IFetchedComment, IPost } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
-
-/** Dummy placeholders — keep or replace with real data wiring as needed */
-const dummyUsers = [
-  {
-    _id: "user1",
-    username: "john_doe",
-    name: "John Doe",
-    profilePic: "https://i.pravatar.cc/150?u=john",
-  },
-];
-
-const dummyComments = [
-  {
-    _id: "comment1",
-    user: dummyUsers[0],
-    content: "This is absolutely stunning! Where was this taken?",
-    createdAt: new Date("2024-12-01T10:30:00"),
-  },
-  {
-    _id: "comment2",
-    user: dummyUsers[0],
-    content: "Love the composition and colors! 🔥",
-    createdAt: new Date("2024-12-01T11:15:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-  {
-    _id: "comment3",
-    user: dummyUsers[0],
-    content: "Thanks everyone! This was taken at the Grand Canyon.",
-    createdAt: new Date("2024-12-01T12:00:00"),
-  },
-];
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { addComment, getComments } from "@/actions/post.actions";
+import { useUser } from "@clerk/nextjs";
 
 interface SinglePostModalProps {
   post: IPost;
@@ -104,19 +31,15 @@ interface SinglePostModalProps {
   initialImageIndex?: number;
 }
 
-export default function SinglePostModal({
-  post,
-  onClose,
-  showCommens,
-  initialImageIndex = 0,
-}: SinglePostModalProps) {
+export default function SinglePostModal({ post, onClose, showCommens, initialImageIndex = 0 }: SinglePostModalProps) {
   const images = post.images ?? [];
   const [currentImageIndex, setCurrentImageIndex] = useState(initialImageIndex);
   const [newComment, setNewComment] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const commentsEndRef = useRef<HTMLDivElement>(null);
-  const postUser = dummyUsers[0];
   const [showCommentSection, setShowCommentSection] = useState(showCommens || false);
+
+  const { user } = useUser();
 
   // Prevent body scrolling while modal is open (important for mobile).
   useEffect(() => {
@@ -150,9 +73,28 @@ export default function SinglePostModal({
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   }, [images.length]);
 
+  const queryClient = useQueryClient();
+
+  const {
+    data: comments,
+    isLoading: isLoadingComments,
+    isError: isErrorComments,
+    refetch: refetchComments,
+  } = useQuery({
+    queryKey: ["comments", post._id],
+    queryFn: async () => (await getComments(post._id as string)) as unknown as IFetchedComment[],
+  });
+
+  const { mutate: addCommentToPost } = useMutation({
+    mutationFn: async () => await addComment(post._id as string, newComment),
+    onSuccess: () => {
+      setNewComment("");
+      queryClient.invalidateQueries({ queryKey: ["comments", post._id] });
+    },
+  });
+
   const handlePostComment = () => {
-    // wire to backend as needed
-    setNewComment("");
+    addCommentToPost();
     setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
   };
 
@@ -240,34 +182,42 @@ export default function SinglePostModal({
             <div className="flex items-center p-4 border-b border-base-300 flex-shrink-0">
               <div className="avatar mr-3">
                 <div className="w-8 h-8 rounded-full overflow-hidden">
-                  <Image
-                    src={postUser.profilePic}
-                    alt={postUser.username}
-                    width={32}
-                    height={32}
-                    className="object-cover"
-                  />
+                  <Link href={`/profile/${post.user.username}`}>
+                    <Image
+                      src={user?.imageUrl || ""}
+                      alt={user?.username || "User Avatar"}
+                      width={32}
+                      height={32}
+                      className="object-cover"
+                    />
+                  </Link>
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <Link
-                  href={`/profile/${postUser.username}`}
-                  className="font-semibold text-sm hover:underline"
-                >
-                  {postUser.username}
-                </Link>
-
-                <div className="flex items-center gap-2">
+                <div>
+                  <Link href={`/profile/${post.user.username}`} className="hover:underline hover:text-gray-300">
+                    <p className="text-sm font-semibold">{post.user.name}</p>
+                  </Link>
+                  <p className="text-sm text-gray-400">@{post.user.username}</p>
+                  <div className="flex">
+                    <p className="text-xs text-gray-400">
+                      {formatDistanceToNowStrict(post.createdAt, { addSuffix: true })}
+                    </p>
+                    <p className="text-xs text-gray-400 ml-1">-</p>
+                    <p className="text-xs text-gray-400 ml-1">{post.visibility}</p>
+                    {post.isEdited && (
+                      <>
+                        <p className="text-xs text-gray-400 ml-1">-</p>
+                        <p className="text-xs text-gray-400 ml-1">Edited</p>
+                      </>
+                    )}
+                  </div>
                   {post.location && (
-                    <div className="flex items-center text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 flex items-center">
                       <MapPin size={12} className="mr-1" />
-                      Ratmalana
                       {post.location}
-                    </div>
+                    </p>
                   )}
-                  <p className="text-xs text-gray-500 ">
-                    {formatDistanceToNowStrict(post.createdAt, { addSuffix: true })}
-                  </p>
                 </div>
               </div>
             </div>
@@ -282,37 +232,85 @@ export default function SinglePostModal({
             {/* COMMENTS: the only scrollable area */}
             {(!isMobile || showCommentSection) && (
               <div className="flex-1 min-h-0 overflow-y-auto p-4">
-                <h3 className="font-semibold mb-4">Comments ({dummyComments.length})</h3>
+                <h3 className="font-semibold mb-4">Comments ({comments?.length})</h3>
 
-                {dummyComments.map((c) => (
-                  <div key={c._id} className="flex mb-4 p-3 bg-base-200 rounded-lg">
-                    <div className="avatar mr-3">
-                      <div className="w-8 h-8 rounded-full overflow-hidden">
-                        <Image
-                          src={c.user.profilePic}
-                          alt={c.user.name}
-                          width={32}
-                          height={32}
-                          className="object-cover"
-                        />
-                      </div>
-                    </div>
+                {isLoadingComments && (
+                  <p className="text-sm text-gray-500 text-center animate-pulse mb-4">Loading comments...</p>
+                )}
 
-                    <div className="flex-1">
-                      <div className="flex flex-col  mb-1">
-                        <span className="font-semibold text-sm mr-2">{c.user.username}</span>
-                        <span className="text-sm">{c.content}</span>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {formatDistanceToNowStrict(c.createdAt, { addSuffix: true })}
-                      </p>
-                    </div>
+                {comments?.length === 0 && <p className="text-sm text-gray-500 text-center">Be the first to comment</p>}
 
-                    {/* <button className="btn btn-ghost btn-sm p-0 hover:bg-transparent self-start">
-                    <Heart size={14} />
-                  </button> */}
+                {isErrorComments && (
+                  <div className="flex flex-col items-center">
+                    <p className="text-sm text-gray-500 text-center">Error loading comments</p>
+                    <button type="button" className="btn btn-primary btn-sm mt-2" onClick={() => refetchComments()}>
+                      Retry
+                    </button>
                   </div>
-                ))}
+                )}
+
+                {!isLoadingComments &&
+                  !isErrorComments &&
+                  comments !== undefined &&
+                  comments.map((c) => (
+                    <div key={c._id + c.user.clerkId} className="flex mb-4 p-3 bg-base-200 rounded-lg relative">
+                      <div className="avatar mr-3">
+                        <div className="w-8 h-8 rounded-full overflow-hidden">
+                          <Image
+                            src={c.user.profilePic}
+                            alt={c.user.name || "User Avatar"}
+                            width={32}
+                            height={32}
+                            className="object-cover"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex flex-col  mb-1">
+                          <span className="font-semibold text-sm mr-2">{c.user.name}</span>
+                          <div className="flex">
+                            <span className="font-semibold text-xs  text-gray-500">{c.user.username}</span>
+                            <p className="text-xs text-gray-400 mx-1">-</p>
+                            <p className="text-xs text-gray-500">
+                              {formatDistanceToNowStrict(c.createdAt, { addSuffix: true })}
+                            </p>
+                          </div>
+                        </div>
+                        <span>{c.content}</span>
+                        <div className="flex gap-2 mt-2">
+                          <button className="cursor-pointer">
+                            <Smile size={14} />
+                          </button>
+                          <button className="cursor-pointer">
+                            <Frown size={14} />
+                          </button>
+                          <button className="cursor-pointer">
+                            <Angry size={14} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="dropdown dropdown-end rounded-full">
+                        <div tabIndex={0} title="More" role="button" className="btn btn-ghost btn-circle">
+                          <MoreVertical size={15} />
+                        </div>
+                        <ul
+                          tabIndex={0}
+                          className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+                        >
+                          <li>
+                            <a>Edit</a>
+                          </li>
+
+                          <li className="text-red-500">
+                            <a title="Delete" onClick={() => {}}>
+                              Delete
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  ))}
 
                 <div ref={commentsEndRef} />
               </div>
@@ -368,10 +366,7 @@ export default function SinglePostModal({
                       </button>
                     </div>
                   </div>
-                  <div
-                    className="tooltip"
-                    data-tip={showCommentSection ? "Hide Comments" : "Show Comments"}
-                  >
+                  <div className="tooltip" data-tip={showCommentSection ? "Hide Comments" : "Show Comments"}>
                     {isMobile && (
                       <button
                         title={showCommentSection ? "Hide Comments" : "Show Comments"}
@@ -379,11 +374,7 @@ export default function SinglePostModal({
                         className="flex items-center gap-2 bg-gray-900/70 p-2 rounded-full hover:bg-gray-800 cursor-pointer"
                         onClick={() => setShowCommentSection((preValue) => !preValue)}
                       >
-                        {showCommentSection ? (
-                          <MessageSquareOff size={24} />
-                        ) : (
-                          <MessageSquareMore size={24} />
-                        )}
+                        {showCommentSection ? <MessageSquareOff size={24} /> : <MessageSquareMore size={24} />}
 
                         {post && post.commentsCount > 0 && (
                           <p className="text-sm font-semibold mb-1">{post.commentsCount}</p>
