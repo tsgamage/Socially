@@ -84,7 +84,6 @@ export async function getAllPosts(): Promise<IFetchedPost[]> {
 }
 
 export async function getPostById(postId: string) {
-  console.log("getting post by postId", postId);
   try {
     await connectDB();
     const post = await Post.findById(postId).populate("user", "name username clerkId profilePic").lean();
@@ -107,8 +106,6 @@ export async function deletePost(postId: string) {
     }
 
     const post: IPost | null = await Post.findById(postId);
-
-    console.log(post?.user.toString());
 
     if (!post) {
       throw new Error("Post not found");
@@ -157,8 +154,6 @@ export async function giveUpvote(postId: string) {
     }
 
     const post: IPost | null = await Post.findById(postId);
-
-    console.log(post);
 
     if (!post) {
       throw new Error("Post not found");

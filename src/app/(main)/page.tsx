@@ -35,7 +35,6 @@ export default function Home() {
   const handleBookmarkClick = () => {};
 
   const handleCopyLinkClick = async (postId: string, imageIndex: number) => {
-    console.log(initialImageIndex);
     await navigator.clipboard.writeText(
       process.env.NEXT_PUBLIC_SITE_URL +
         `/post/${postId}/?view=${isCommentClicked ? "comments" : "post"}&initialImage=${imageIndex + 1}`

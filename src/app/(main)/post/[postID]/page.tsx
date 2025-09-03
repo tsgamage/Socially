@@ -31,8 +31,6 @@ export default function SinglePost({ params }: { params: Promise<{ postId: strin
   const searchParams = useSearchParams();
   const view = searchParams.get("view");
   const initialImage: number = searchParams.get("initialImage") as unknown as number;
-  console.log("view", view);
-  console.log("initialImage", initialImage);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["post", postId],

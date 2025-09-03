@@ -22,6 +22,7 @@ import { useUser } from "@clerk/nextjs";
 import { deletePost, giveDownvote, giveUpvote, toggleSavePost } from "@/actions/post.actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DeleteComfirmationModal from "../ui/modals/DeleteComfirmationsModal";
+import VisibilityChangeModal from "../ui/modals/VisibilityChangeModal";
 
 interface PostCardProps {
   post: IFetchedPost;
@@ -39,6 +40,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const deleteComfirmationModal = useRef<HTMLDialogElement>(null);
+  const visibilityChangeModal = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -148,8 +150,6 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
       await queryClient.cancelQueries({ queryKey: ["posts"] });
       const allPosts: IFetchedPost[] | undefined = queryClient.getQueryData(["posts"]);
 
-      console.log(allPosts);
-
       const updatedPosts = allPosts?.map((p) => (p._id === postId ? { ...p, isSaved: !p.isSaved } : p));
 
       queryClient.setQueryData(["posts"], updatedPosts);
@@ -164,6 +164,11 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
       queryClient.invalidateQueries({ queryKey: ["posts", postId] });
     },
   });
+
+  const handleVisibilityChange = async (visibility: string) => {
+    console.log(visibility);
+    visibilityChangeModal.current?.close();
+  };
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -191,6 +196,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
         title="Delete Post?"
         description="Are you sure you want to delete this post?"
       />
+      <VisibilityChangeModal ref={visibilityChangeModal as any} onChange={handleVisibilityChange} />
       <div className="card xl:w-10/12 bg-base-500 shadow-md border border-base-content/10 rounded-xl mb-6 overflow-hidden mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b-1 border-base-content/10">
@@ -245,7 +251,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
                   <li>
                     <a>Edit</a>
                   </li>
-                  <li>
+                  <li onClick={() => visibilityChangeModal.current?.showModal()}>
                     <a>Visibility ({post.visibility})</a>
                   </li>
                 </>

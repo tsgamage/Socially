@@ -152,7 +152,6 @@ export default function SinglePostModal({
 
   const handlePostComment = () => {
     // wire to backend as needed
-    console.log("Posting comment:", newComment);
     setNewComment("");
     setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
   };
