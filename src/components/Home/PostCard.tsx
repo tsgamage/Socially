@@ -16,15 +16,15 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
-import { IPost } from "@/lib/types/modals.type";
+import { IPost, ISavedPost } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import {
-  isAlreadyVoted,
   deletePost,
   giveDownvote,
   giveUpvote,
+  isAlreadyVoted,
   isPostSaved,
   toggleSavePost,
 } from "@/actions/post.actions";
@@ -39,7 +39,7 @@ interface PostCardProps {
   onBookmarkClick: () => void;
 }
 
-export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClick, onBookmarkClick }: PostCardProps) {
+export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClick }: PostCardProps) {
   const { user: clerkUser } = useUser();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCommentInput, setShowCommentInput] = useState(false);
@@ -92,86 +92,101 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
 
   const { mutate: giveUpvoteForPost } = useMutation({
     mutationFn: giveUpvote,
-    // onMutate: async (postId) => {
-    //   await queryClient.cancelQueries({ queryKey: ["posts"] });
-    //   //   getting the old data
-    //   const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
-    //   //   getting the post data
-    //   const post = allPosts!.filter((p) => p._id === postId)[0];
-    //   //     getting the upvote data
-    //   const isVoted = voteData;
-
-    //   //     updating the data based on the votedPosts value
-    //   let updatedPost;
-    //   if (isVoted) {
-    //     updatedPost = { ...post, votesCount: post.votesCount - 1 };
-    //     queryClient.setQueryData(["votedPosts", post._id], { ...isVoted, value: -1 });
-    //   } else {
-    //     updatedPost = { ...post, votesCount: post.votesCount + 1 };
-    //     queryClient.setQueryData(["votedPosts", post._id], { ...isVoted, value: 1 });
-    //   }
-
-    //   //   removing the current post from the old data array
-    //   const updatedPosts = allPosts?.map((p) => (p._id === postId ? updatedPost : p));
-
-    //   //   updating the query data
-    //   queryClient.setQueryData(["posts"], updatedPosts);
-    //   return { oldPostsData: allPosts, oldUpvotedData: isVoted };
-    // },
-    // onError: (error, data, context) => {
-    //   queryClient.setQueryData(["posts"], context!.oldPostsData);
-    //   queryClient.setQueryData(["votedPosts", post._id], context!.oldUpvotedData);
-    // },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["votedPosts", post._id] });
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
+      const postIdx = allPosts?.findIndex((p) => p._id === postId);
+      const post = postIdx !== undefined && postIdx > -1 ? allPosts?.[postIdx] : undefined;
+      const prevVote = queryClient.getQueryData(["votedPosts", postId]);
+      if (post) {
+        let updatedPost;
+        if (voteData?.value === 1) {
+          updatedPost = { ...post, votesCount: post.votesCount - 1 };
+          queryClient.setQueryData(["votedPosts", postId], null);
+        } else if (voteData?.value === -1) {
+          updatedPost = { ...post, votesCount: post.votesCount + 2 };
+          queryClient.setQueryData(["votedPosts", postId], { ...voteData, value: 1 });
+        } else {
+          updatedPost = { ...post, votesCount: post.votesCount + 1 };
+          queryClient.setQueryData(["votedPosts", postId], { value: 1 });
+        }
+        if (allPosts && postIdx !== undefined && postIdx > -1) {
+          const updatedPosts = [...allPosts];
+          updatedPosts[postIdx] = updatedPost as IPost;
+          queryClient.setQueryData(["posts"], updatedPosts);
+        }
+      }
+      return { oldPosts: allPosts, oldVote: prevVote };
+    },
+    onError: (err, postId, context) => {
+      if (context?.oldPosts) queryClient.setQueryData(["posts"], context.oldPosts);
+      if (context?.oldVote) queryClient.setQueryData(["votedPosts", postId], context.oldVote);
+    },
+    onSettled: (data, error, postId) => {
+      queryClient.invalidateQueries({ queryKey: ["votedPosts", postId] });
+      queryClient.invalidateQueries({ queryKey: ["posts", postId] });
     },
   });
 
   const { mutate: giveDownvoteForPost } = useMutation({
     mutationFn: giveDownvote,
-    // onMutate: async (postId) => {
-    //   await queryClient.cancelQueries({ queryKey: ["posts"] });
-    //   //   getting the old data
-    //   const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
-    //   //   getting the post data
-    //   const post = allPosts!.filter((p) => p._id === postId)[0];
-
-    //   //     getting the upvote data
-    //   const isVoted = voteData;
-
-    //   //     updating the data based on the votedPosts value
-    //   let updatedPost;
-    //   if (isVoted) {
-    //     updatedPost = { ...post, votesCount: post.votesCount - 1 };
-    //     queryClient.setQueryData(["votedPosts", post._id], { ...isVoted, value: -1 });
-    //   } else {
-    //     updatedPost = { ...post, votesCount: post.votesCount + 1 };
-    //     queryClient.setQueryData(["votedPosts", post._id], { ...isVoted, value: -1 });
-    //   }
-
-    //   //   removing the current post from the old data array
-    //   const updatedPosts = allPosts?.map((p) => (p._id === postId ? updatedPost : p));
-
-    //   //   updating the query data
-    //   queryClient.setQueryData(["posts"], updatedPosts);
-    //   return { oldPostsData: allPosts, oldUpvotedData: isVoted };
-    // },
-    // onError: (error, data, context) => {
-    //   queryClient.setQueryData(["posts"], context!.oldPostsData);
-    //   queryClient.setQueryData(["votedPosts", post._id], context!.oldUpvotedData);
-    // },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["votedPosts", post._id] });
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      const allPosts: IPost[] | undefined = queryClient.getQueryData(["posts"]);
+      const postIdx = allPosts?.findIndex((p) => p._id === postId);
+      const post = postIdx !== undefined && postIdx > -1 ? allPosts?.[postIdx] : undefined;
+      const prevVote = queryClient.getQueryData(["votedPosts", postId]);
+      if (post) {
+        let updatedPost;
+        if (voteData?.value === -1) {
+          updatedPost = { ...post, votesCount: post.votesCount + 1 };
+          queryClient.setQueryData(["votedPosts", postId], null);
+        } else if (voteData?.value === 1) {
+          updatedPost = { ...post, votesCount: post.votesCount - 2 };
+          queryClient.setQueryData(["votedPosts", postId], { ...voteData, value: -1 });
+        } else {
+          updatedPost = { ...post, votesCount: post.votesCount - 1 };
+          queryClient.setQueryData(["votedPosts", postId], { value: -1 });
+        }
+        if (allPosts && postIdx !== undefined && postIdx > -1) {
+          const updatedPosts = [...allPosts];
+          updatedPosts[postIdx] = updatedPost as IPost;
+          queryClient.setQueryData(["posts"], updatedPosts);
+        }
+      }
+      return { oldPosts: allPosts, oldVote: prevVote };
+    },
+    onError: (err, postId, context) => {
+      if (context?.oldPosts) queryClient.setQueryData(["posts"], context.oldPosts);
+      if (context?.oldVote) queryClient.setQueryData(["votedPosts", postId], context.oldVote);
+    },
+    onSettled: (data, error, postId) => {
+      queryClient.invalidateQueries({ queryKey: ["votedPosts", postId] });
+      queryClient.invalidateQueries({ queryKey: ["posts", postId] });
     },
   });
 
   const { mutate: togglePostSave } = useMutation({
     mutationFn: toggleSavePost,
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["savedPosts"] });
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["savedPosts", postId] });
+      const isPostSaved: ISavedPost[] | undefined = queryClient.getQueryData(["savedPosts", postId]);
+
+      if (isPostSaved) {
+        queryClient.setQueryData(["savedPosts", postId], null);
+      } else {
+        queryClient.setQueryData(["savedPosts", postId], { postId });
+      }
+      return { oldPosts: isPostSaved };
+    },
+
+    onError: (err, postId, context) => {
+      queryClient.setQueryData(["savedPosts", postId], context!.oldPosts);
+    },
+
+    onSettled: (data, error, postId) => {
+      queryClient.invalidateQueries({ queryKey: ["savedPosts", postId] });
+      queryClient.invalidateQueries({ queryKey: ["posts", postId] });
     },
   });
 

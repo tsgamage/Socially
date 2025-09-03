@@ -62,10 +62,6 @@ export async function getAllPosts() {
     await connectDB();
     const user = await getUserByClerkId();
 
-    if (!user) {
-      throw new Error("Unauthorized");
-    }
-
     const posts = await Post.find({ visibility: "public" })
       .sort({ createdAt: -1 })
       .populate("user", "name username clerkId profilePic")
