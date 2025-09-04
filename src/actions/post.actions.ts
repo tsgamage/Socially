@@ -89,7 +89,30 @@ export async function getAllPosts(): Promise<IFetchedPost[]> {
 export async function getPostById(postId: string) {
   try {
     await connectDB();
-    const post = await Post.findById(postId).populate("user", "name username clerkId profilePic").lean();
+    const user = await getUserByClerkId();
+    const post: any = await Post.findById(postId).populate("user", "name username clerkId profilePic").lean();
+
+    if (!post) return null;
+
+    if (user) {
+      // Check if user has voted
+      const vote: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+      // 0 for no vote, 1 for upvote, -1 for downvote
+      if (vote) {
+        post.vote = vote.value;
+      } else {
+        post.vote = 0;
+      }
+
+      // Check if user has saved
+      const saved = await SavedPost.findOne({ post: post._id, user: user._id });
+      post.isSaved = !!saved;
+
+      post.commentsCount = await Comment.countDocuments({ post: post._id });
+    } else {
+      post.vote = "unauthenticated";
+      post.isSaved = "unauthenticated";
+    }
 
     return JSON.parse(JSON.stringify(post));
   } catch (err) {

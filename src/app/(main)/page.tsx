@@ -2,15 +2,15 @@
 import { getAllPosts } from "@/actions/post.actions";
 import CreatePost from "@/components/Home/CreatePost";
 import PostCard from "@/components/Home/PostCard";
-import SinglePostModal from "@/components/main/SinglePostModal";
-import { IFetchedPost, IPost } from "@/lib/types/modals.type";
+import SinglePostModal from "@/components/Home/SinglePostView/SinglePostModal";
+import { IFetchedPost } from "@/lib/types/modals.type";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 
 export default function Home() {
   const [showModal, setShowModal] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<IPost>({} as IPost);
+  const [selectedPost, setSelectedPost] = useState<IFetchedPost>({} as IFetchedPost);
   const [initialImageIndex, setInitialImageIndex] = useState(0);
   const [isCommentClicked, setIsCommentClicked] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Home() {
     queryFn: getAllPosts,
   });
 
-  const handlePostClick = (post: IPost, imageIndex: number = 0) => {
+  const handlePostClick = (post: IFetchedPost, imageIndex: number = 0) => {
     setSelectedPost(post);
     setInitialImageIndex(imageIndex);
     setShowModal(true);
@@ -66,7 +66,7 @@ export default function Home() {
 
       {showModal && selectedPost && (
         <SinglePostModal
-          post={selectedPost}
+          postId={selectedPost._id as string}
           onClose={handleCloseModal}
           showCommens={isCommentClicked}
           initialImageIndex={initialImageIndex}

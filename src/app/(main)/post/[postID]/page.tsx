@@ -1,28 +1,9 @@
 "use client";
 import { getPostById } from "@/actions/post.actions";
-import SinglePostModal from "@/components/main/SinglePostModal";
+import SinglePostModal from "@/components/Home/SinglePostView/SinglePostModal";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { redirect, useSearchParams } from "next/navigation";
-
-// Reusing dummyPosts for content
-const dummyPosts = [
-  {
-    _id: "68b06482da6cda4e4e360d97",
-    user: "68b03eeaef03cebcdbfc5cbe",
-    content: "Princessssssssssssssssss 🤍",
-    images: [
-      "https://i.pinimg.com/736x/f7/25/17/f7251743d24deb52f2aec3173bf58923.jpg",
-      "https://www.pinterest.com/pin/3729612268517871/",
-    ],
-    commentsCount: 0,
-    votesCount: 0,
-    visibility: "public",
-    createdAt: "2025-08-28T14:15:30.479Z",
-    updatedAt: "2025-08-28T14:15:30.479Z",
-    __v: 0,
-  },
-];
 
 import React from "react";
 

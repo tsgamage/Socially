@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import SinglePostModal from "@/components/main/SinglePostModal";
+import SinglePostModal from "@/components/Home/SinglePostView/SinglePostModal";
 
 // Keep the dummyPosts array as is
 
