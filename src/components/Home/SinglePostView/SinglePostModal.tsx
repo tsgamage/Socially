@@ -53,10 +53,10 @@ export default function SinglePostModal({ postId, onClose, showCommens, initialI
         <button
           type="button"
           title="Close Modal"
-          className="btn btn-sm btn-circle absolute right-2 top-2 z-40 bg-base-100/80"
+          className="btn btn-sm btn-circle absolute right-2 top-2 z-40"
           onClick={onClose}
         >
-          <X size={16} />
+          <X size={20} />
         </button>
 
         {/* Main flex container: prevent outer overflow so only comments scroll */}

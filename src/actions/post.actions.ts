@@ -353,7 +353,6 @@ export async function getComments(postId: string): Promise<IComment[]> {
       .sort({ createdAt: -1 })
       .populate("user")
       .lean();
-    console.log("comments", comments);
     return JSON.parse(JSON.stringify(comments));
   } catch (err) {
     console.error(err);
@@ -393,6 +392,49 @@ export async function addComment(postId: string, comment: string) {
 
     revalidatePath("/");
 
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function editComment(commentId: string, commentContent: string) {
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const comment: IComment | null = await Comment.findById(commentId);
+
+    if (!comment) {
+      throw new Error("Comment not found");
+    }
+
+    const userId = user._id as string;
+    if (comment.user.toString() !== userId.toString()) {
+      throw new Error("Unauthorized");
+    }
+
+    if (commentContent.trim() === comment.content.trim()) return;
+
+    if (!commentContent.trim()) {
+      throw Error("Comment cannot be empty");
+    }
+
+    if (commentContent.length > 500) {
+      throw new Error("Comment cannot be longer than 500 characters");
+    }
+
+    comment.content = xss(commentContent.trim());
+    comment.isEdited = true;
+
+    await comment.save();
+    revalidatePath("/");
     return { success: true };
   } catch (err) {
     console.error(err);

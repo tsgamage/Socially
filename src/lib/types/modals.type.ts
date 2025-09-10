@@ -1,5 +1,4 @@
 import { Document, ObjectId } from "mongoose";
-import { Interface } from "readline";
 
 export interface IUser extends Document {
   clerkId: string;
@@ -40,6 +39,7 @@ export interface IComment extends Document {
   type: string;
   parentComment: ObjectId | null;
   repliesCount: number;
+  isEdited: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

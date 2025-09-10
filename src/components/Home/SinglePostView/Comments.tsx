@@ -1,11 +1,10 @@
 import { getComments } from "@/actions/post.actions";
-import { IFetchedComment, IPost } from "@/lib/types/modals.type";
+import { IFetchedComment, IFetchedPost } from "@/lib/types/modals.type";
 import { useQuery } from "@tanstack/react-query";
-import { formatDistanceToNowStrict } from "date-fns";
-import { Angry, Frown, Loader2, MoreVertical, Smile } from "lucide-react";
-import Image from "next/image";
+import { Loader2 } from "lucide-react";
+import CommentCard from "./CommentCard";
 
-export default function Comments({ post, ref }: { post: IPost; ref: React.RefObject<HTMLDivElement> }) {
+export default function Comments({ post, ref }: { post: IFetchedPost; ref: React.RefObject<HTMLDivElement> }) {
   const {
     data: comments,
     isLoading: isLoadingComments,
@@ -37,59 +36,8 @@ export default function Comments({ post, ref }: { post: IPost; ref: React.RefObj
       {!isLoadingComments &&
         !isErrorComments &&
         comments !== undefined &&
-        comments.map((c) => (
-          <div key={c._id + c.user.clerkId} className="flex mb-4 p-3 bg-base-200 rounded-lg relative">
-            <div className="avatar mr-3">
-              <div className="w-8 h-8 rounded-full overflow-hidden">
-                <Image
-                  src={c.user.profilePic}
-                  alt={c.user.name || "User Avatar"}
-                  width={32}
-                  height={32}
-                  className="object-cover"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1">
-              <div className="flex flex-col  mb-1">
-                <span className="font-semibold text-sm mr-2">{c.user.name}</span>
-                <div className="flex">
-                  <span className="font-semibold text-xs  text-gray-500">{c.user.username}</span>
-                  <p className="text-xs text-gray-400 mx-1">-</p>
-                  <p className="text-xs text-gray-500">{formatDistanceToNowStrict(c.createdAt, { addSuffix: true })}</p>
-                </div>
-              </div>
-              <span>{c.content}</span>
-              <div className="flex gap-2 mt-2">
-                <button className="cursor-pointer">
-                  <Smile size={14} />
-                </button>
-                <button className="cursor-pointer">
-                  <Frown size={14} />
-                </button>
-                <button className="cursor-pointer">
-                  <Angry size={14} />
-                </button>
-              </div>
-            </div>
-            <div className="dropdown dropdown-end rounded-full">
-              <div tabIndex={0} title="More" role="button" className="btn btn-ghost btn-circle">
-                <MoreVertical size={15} />
-              </div>
-              <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
-                <li>
-                  <a>Edit</a>
-                </li>
-
-                <li className="text-red-500">
-                  <a title="Delete" onClick={() => {}}>
-                    Delete
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
+        comments.map((comment) => (
+          <CommentCard key={comment._id + comment.user.clerkId} comment={comment} post={post} />
         ))}
 
       <div ref={ref} />

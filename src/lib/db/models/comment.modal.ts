@@ -9,6 +9,7 @@ const commentSchema = new mongoose.Schema<IComment>(
     type: { type: String, enum: ["comment", "reply"], default: "comment" },
     parentComment: { type: mongoose.Schema.Types.ObjectId, ref: "Comment", default: null },
     repliesCount: { type: Number, default: 0 },
+    isEdited: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
