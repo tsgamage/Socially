@@ -10,6 +10,7 @@ import SavedPost from "@/lib/db/models/savedPost.modal";
 import Notification from "@/lib/db/models/notification.modal";
 import Vote from "@/lib/db/models/vote.model";
 import xss from "xss";
+import imagekit from "@/lib/config/imagekit";
 
 export type PostFormState = {
   success: boolean;
@@ -18,10 +19,12 @@ export type PostFormState = {
 };
 
 // * Post handling functions
-export async function createPost(formData: FormData): Promise<PostFormState> {
-  const content = formData.get("content") as string;
+export async function createPost(postData: { images: File[]; content: string }): Promise<PostFormState> {
+  const images: File[] = postData.images;
+  const content = postData.content;
+
   if (!content) {
-    return { success: false, message: "Post content cannot be empty.", content };
+    throw new Error("Post content cannot be empty.");
   }
 
   try {
@@ -29,18 +32,68 @@ export async function createPost(formData: FormData): Promise<PostFormState> {
     const user = await getUserByClerkId();
 
     if (!user) {
-      return { success: false, message: "Unauthorized", content };
+      throw new Error("Unauthorized.");
     }
 
-    const post = new Post({ content, user: user._id });
-    await post.save();
+    const post: IPost = new Post({ content, user: user._id });
 
+    console.log(images);
+
+    // Upload single image
+    if (images && images.length === 1) {
+      const arrayBuffer = await images[0].arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Generate file name: original name + _ + random 6 digits + _ + timestamp (ms)
+      const randomDigits = Math.floor(100000 + Math.random() * 900000);
+      const timestamp = Date.now(); // milliseconds
+      const fileName = `${images[0].name}_${randomDigits}_${timestamp}`;
+
+      const response = (await imagekit.upload({
+        file: buffer,
+        folder: "social_media/post_images",
+        fileName,
+      })) as { filePath: string };
+
+      const url = imagekit.url({
+        path: response.filePath,
+        transformation: [{ quality: "auto" }, { format: "webp" }, { width: 512 }],
+      });
+      post.images.push(url);
+    }
+
+    // Upload multiple images
+    if (images && images.length > 1) {
+      for (const image of images) {
+        const arrayBuffer = await image.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Generate file name: original name + _ + random 6 digits + _ + timestamp (ms)
+        const randomDigits = Math.floor(100000 + Math.random() * 900000);
+        const timestamp = Date.now(); // milliseconds
+        const fileName = `${image.name}_${randomDigits}_${timestamp}`;
+
+        const response = (await imagekit.upload({
+          file: buffer,
+          folder: "social_media/post_images",
+          fileName,
+        })) as { filePath: string };
+
+        const url = imagekit.url({
+          path: response.filePath,
+          transformation: [{ quality: "auto" }, { format: "webp" }, { width: 1080 }],
+        });
+        post.images.push(url);
+      }
+    }
+
+    await post.save();
     revalidatePath("/");
     return { success: true, message: "Post created successfully!" };
   } catch (err) {
     console.error("Error creating post:", err);
     const message = err instanceof Error ? err.message : "An unknown error occurred.";
-    return { success: false, message };
+    throw new Error(message);
   }
 }
 

@@ -1,8 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import ImageModal from "@/components/main/ImageModal";
-import { Edit3, Camera, Users, Bookmark, Heart, Grid3X3 } from "lucide-react";
+import { Edit3, Camera, Bookmark, Heart, Grid3X3 } from "lucide-react";
 
 const dummyUserProfile = {
   banner: "https://picsum.photos/id/1047/1200/400",
@@ -45,21 +44,31 @@ export default function ProfilePage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "online": return "bg-green-500";
-      case "idle": return "bg-yellow-500";
-      case "dnd": return "bg-red-500";
-      case "offline": return "bg-gray-500";
-      default: return "bg-gray-500";
+      case "online":
+        return "bg-green-500";
+      case "idle":
+        return "bg-yellow-500";
+      case "dnd":
+        return "bg-red-500";
+      case "offline":
+        return "bg-gray-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "online": return "Online";
-      case "idle": return "Idle";
-      case "dnd": return "Do Not Disturb";
-      case "offline": return "Offline";
-      default: return "Offline";
+      case "online":
+        return "Online";
+      case "idle":
+        return "Idle";
+      case "dnd":
+        return "Do Not Disturb";
+      case "offline":
+        return "Offline";
+      default:
+        return "Offline";
     }
   };
 
@@ -71,11 +80,11 @@ export default function ProfilePage() {
           className={`relative aspect-square overflow-hidden cursor-pointer group ${image.span}`}
           onClick={() => handleImageClick(image.src)}
         >
-          <Image 
-            src={image.src} 
-            alt={image.alt} 
-            fill 
-            className="object-cover transition-transform duration-300 group-hover:scale-105" 
+          <Image
+            src={image.src}
+            alt={image.alt}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
         </div>
@@ -100,12 +109,7 @@ export default function ProfilePage() {
     <div className="max-w-4xl mx-auto pb-10">
       {/* Banner */}
       <div className="relative h-48 w-full rounded-t-lg overflow-hidden">
-        <Image 
-          src={dummyUserProfile.banner} 
-          alt="Banner" 
-          fill 
-          className="object-cover" 
-        />
+        <Image src={dummyUserProfile.banner} alt="Banner" fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30"></div>
         <button className="absolute top-4 right-4 btn btn-sm btn-circle bg-base-100/80 backdrop-blur-sm">
           <Camera size={16} />
@@ -127,22 +131,20 @@ export default function ProfilePage() {
               />
             </div>
             {/* Discord-style status indicator */}
-            <div className={`absolute bottom-2 right-2 w-6 h-6 rounded-full ring-2 ring-base-100 ${getStatusColor(dummyUserProfile.status)}`}></div>
+            <div
+              className={`absolute bottom-2 right-2 w-6 h-6 rounded-full ring-2 ring-base-100 ${getStatusColor(dummyUserProfile.status)}`}
+            ></div>
           </div>
-          
+
           {/* Status text */}
-          <div className="badge badge-md badge-ghost mb-2">
-            {getStatusText(dummyUserProfile.status)}
-          </div>
+          <div className="badge badge-md badge-ghost mb-2">{getStatusText(dummyUserProfile.status)}</div>
         </div>
 
         {/* Profile Info */}
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold">{dummyUserProfile.name}</h1>
           <p className="text-base-content/70">@{dummyUserProfile.username}</p>
-          <p className="text-sm text-base-content/60 mb-2">
-            Last online: {dummyUserProfile.lastOnline}
-          </p>
+          <p className="text-sm text-base-content/60 mb-2">Last online: {dummyUserProfile.lastOnline}</p>
 
           <p className="mb-4 text-center max-w-md mx-auto">{dummyUserProfile.bio}</p>
 
@@ -170,24 +172,15 @@ export default function ProfilePage() {
 
         {/* Tabs */}
         <div className="tabs tabs-boxed justify-center bg-base-200/50 backdrop-blur-sm mb-6">
-          <a
-            className={`tab gap-2 ${activeTab === "posts" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("posts")}
-          >
+          <a className={`tab gap-2 ${activeTab === "posts" ? "tab-active" : ""}`} onClick={() => setActiveTab("posts")}>
             <Grid3X3 size={18} />
             Posts
           </a>
-          <a
-            className={`tab gap-2 ${activeTab === "saved" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("saved")}
-          >
+          <a className={`tab gap-2 ${activeTab === "saved" ? "tab-active" : ""}`} onClick={() => setActiveTab("saved")}>
             <Bookmark size={18} />
             Saved
           </a>
-          <a
-            className={`tab gap-2 ${activeTab === "liked" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("liked")}
-          >
+          <a className={`tab gap-2 ${activeTab === "liked" ? "tab-active" : ""}`} onClick={() => setActiveTab("liked")}>
             <Heart size={18} />
             Liked
           </a>
@@ -197,9 +190,7 @@ export default function ProfilePage() {
         {renderTabContent()}
       </div>
 
-      {selectedImage && (
-        <ImageModal src={selectedImage} alt="Full screen image" onClose={handleCloseModal} />
-      )}
+      {selectedImage && <ImageModal src={selectedImage} alt="Full screen image" onClose={handleCloseModal} />}
     </div>
   );
 }

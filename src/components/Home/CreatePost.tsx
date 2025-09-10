@@ -53,10 +53,24 @@ export default function CreatePost() {
   });
 
   const createPostAction = async (preState: PostFormState, formData: FormData) => {
+    let formDataObj;
+
+    if (images.length > 0) {
+      formDataObj = {
+        content: formData.get("content"),
+        images: formData.getAll("images"),
+      };
+    } else {
+      formDataObj = {
+        content: formData.get("content"),
+        images: [],
+      };
+    }
+
     setImages([]);
     setTextareaValue("");
     setIsExpanded(false);
-    await mutate(formData);
+    await mutate(formDataObj as any);
 
     return {
       success: false,
@@ -206,12 +220,13 @@ export default function CreatePost() {
               ref={input}
               type="file"
               className="hidden"
-              title="image"
-              multiple
+              title="images"
+              name="images"
               min={1}
               max={4}
               accept="image/png, image/jpeg, image/jpg"
               onChange={handleAddImages}
+              multiple
             />
 
             <button
