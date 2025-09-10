@@ -21,7 +21,7 @@ export interface IUser extends Document {
 
 export interface IPost extends Document {
   user: IUser;
-  content: string;
+  content: string | null;
   location: string | null;
   images: string[];
   commentsCount: number;

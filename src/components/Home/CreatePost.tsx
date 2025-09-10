@@ -54,15 +54,25 @@ export default function CreatePost() {
 
   const createPostAction = async (preState: PostFormState, formData: FormData) => {
     let formDataObj;
+    const content = formData.get("content") as string;
+    const images = formData.getAll("images");
+
+    if (images.length === 0 && !content.trim()) {
+      return {
+        success: false,
+        message: "Post cannot be empty.",
+        content: "",
+      };
+    }
 
     if (images.length > 0) {
       formDataObj = {
-        content: formData.get("content"),
-        images: formData.getAll("images"),
+        content,
+        images,
       };
     } else {
       formDataObj = {
-        content: formData.get("content"),
+        content,
         images: [],
       };
     }
@@ -243,7 +253,7 @@ export default function CreatePost() {
               ref={submitButtonRef}
               type="submit"
               className="btn btn-primary px-6"
-              disabled={textareaValue.length < 5 || isPending}
+              disabled={(images.length === 0 && textareaValue.length < 5) || isPending}
             >
               {isPending ? "Posting..." : "Post"}
             </button>

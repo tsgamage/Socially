@@ -23,8 +23,8 @@ export async function createPost(postData: { images: File[]; content: string }):
   const images: File[] = postData.images;
   const content = postData.content;
 
-  if (!content) {
-    throw new Error("Post content cannot be empty.");
+  if (images.length === 0 && !content.trim()) {
+    throw new Error("Post cannot be empty.");
   }
 
   try {
@@ -35,9 +35,12 @@ export async function createPost(postData: { images: File[]; content: string }):
       throw new Error("Unauthorized.");
     }
 
-    const post: IPost = new Post({ content, user: user._id });
+    const post: IPost = new Post({ user: user._id });
 
-    console.log(images);
+    if (content.trim()) {
+      const senitizedContent = xss(content);
+      post.content = senitizedContent;
+    }
 
     // Upload single image
     if (images && images.length === 1) {

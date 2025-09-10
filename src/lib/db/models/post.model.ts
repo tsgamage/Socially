@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 const PostSchema = new mongoose.Schema<IPost>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    content: { type: String, required: true },
+    content: { type: String, default: null },
     location: { type: String, default: null },
     images: [{ type: String }],
     commentsCount: { type: Number, default: 0 },

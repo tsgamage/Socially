@@ -278,9 +278,11 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
         </div>
 
         {/* Content */}
-        <div className="mb-1 p-3">
-          <span className="text-md">{post.content}</span>
-        </div>
+        {post.content && (
+          <div className="mb-1 p-3">
+            <span className="text-md">{post.content}</span>
+          </div>
+        )}
 
         {/* Image Carousel */}
         {post.images && post.images.length > 0 && (
@@ -288,7 +290,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
             className="relative aspect-square w-full bg-black cursor-pointer"
             onClick={() => handleImageClick(currentImageIndex)}
           >
-            <Image src={post.images[currentImageIndex]} alt="Post image" fill className="object-cover" />
+            <Image src={post.images[currentImageIndex]} alt="Post image" fill className="object-cover object-top" />
 
             {/* Navigation Arrows */}
             {post.images.length > 1 && (
