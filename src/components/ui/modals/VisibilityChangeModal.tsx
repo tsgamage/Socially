@@ -9,8 +9,8 @@ type Props = {
 const VISIBILITY_OPTIONS = [
   { value: "public", label: "Public" },
   { value: "private", label: "Private" },
-  { value: "friends", label: "Friends" },
-  { value: "unlisted", label: "Unlisted" },
+  //   { value: "friends", label: "Friends" },
+  //   { value: "unlisted", label: "Unlisted" },
 ];
 
 export default function VisibilityChangeModal({ ref, onChange }: Props) {

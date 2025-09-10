@@ -19,7 +19,7 @@ import { IFetchedPost } from "@/lib/types/modals.type";
 import { formatDistanceToNowStrict } from "date-fns";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { deletePost, giveDownvote, giveUpvote, toggleSavePost } from "@/actions/post.actions";
+import { deletePost, giveDownvote, giveUpvote, toggleSavePost, updatePostVisibility } from "@/actions/post.actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DeleteComfirmationModal from "../ui/modals/DeleteComfirmationsModal";
 import VisibilityChangeModal from "../ui/modals/VisibilityChangeModal";
@@ -165,8 +165,15 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     },
   });
 
+  const { mutate: changePostVisibility } = useMutation({
+    mutationFn: async (visibility: string) => await updatePostVisibility(post._id as string, visibility),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
+
   const handleVisibilityChange = async (visibility: string) => {
-    console.log(visibility);
+    changePostVisibility(visibility);
     visibilityChangeModal.current?.close();
   };
 

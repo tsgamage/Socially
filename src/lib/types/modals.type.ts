@@ -26,7 +26,7 @@ export interface IPost extends Document {
   images: string[];
   commentsCount: number;
   votesCount: number;
-  visibility: string;
+  visibility: "public" | "private";
   isEdited: boolean;
   createdAt: Date;
   updatedAt: Date;

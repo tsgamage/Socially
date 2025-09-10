@@ -11,7 +11,9 @@ export default function CreatePost() {
   const [images, setImages] = useState<string[]>([]);
   const [textareaValue, setTextareaValue] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   function handleAddImages(event: React.FormEvent<HTMLInputElement>) {
     const files = event.currentTarget.files;
@@ -190,6 +192,9 @@ export default function CreatePost() {
               onBlur={handleTextareaBlur}
               rows={isExpanded ? 3 : 1}
               onChange={(e) => setTextareaValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && e.ctrlKey) submitButtonRef.current?.click();
+              }}
             />
           </div>
 
@@ -219,7 +224,12 @@ export default function CreatePost() {
               <ImageIcon size={20} />
             </button>
 
-            <button type="submit" className="btn btn-primary px-6" disabled={textareaValue.length < 5 || isPending}>
+            <button
+              ref={submitButtonRef}
+              type="submit"
+              className="btn btn-primary px-6"
+              disabled={textareaValue.length < 5 || isPending}
+            >
               {isPending ? "Posting..." : "Post"}
             </button>
           </div>

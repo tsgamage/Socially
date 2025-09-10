@@ -169,6 +169,33 @@ export async function updatePost(postId: string, post: IPost) {
   }
 }
 
+export async function updatePostVisibility(postId: string, visibility: string) {
+  try {
+    const user = getUserByClerkId();
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const post = (await Post.findById(postId)) as IPost;
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    if (visibility.toLowerCase() === "public") {
+      post.visibility = "public";
+    } else {
+      post.visibility = "private";
+    }
+
+    await post.save();
+    revalidatePath("/");
+    return { success: true, message: "visibility updated successfully!" };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
 // * Vote handling functions
 export async function giveUpvote(postId: string) {
   try {
