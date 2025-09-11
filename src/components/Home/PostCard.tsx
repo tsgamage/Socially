@@ -162,6 +162,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
 
     onSettled: (data, error, postId) => {
       queryClient.invalidateQueries({ queryKey: ["posts", postId] });
+      queryClient.invalidateQueries({ queryKey: ["savedPosts"] });
     },
   });
 

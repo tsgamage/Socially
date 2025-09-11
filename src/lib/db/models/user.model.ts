@@ -9,15 +9,17 @@ const userSchema: mongoose.Schema = new mongoose.Schema<IUser>(
     name: { type: String },
     gender: { type: String, enum: ["male", "female", "other"], default: "other" },
     bio: { type: String, maxLength: 160, default: "Earth is a donut 🤓!" },
-    status: { type: String, default: "Hey there!" },
+    note: { type: String, default: "Hey there!" },
+    status: { type: String, enum: ["online", "offline"], default: "online" },
     profilePic: { type: String },
     bannerPic: { type: String },
+    lastOnline: { type: Date, default: Date.now },
 
-    followersCount: [{ type: Number, default: 0 }],
-    followingCount: [{ type: Number, default: 0 }],
-    postsCount: [{ type: Number, default: 0 }],
-    savedPostsCount: [{ type: Number, default: 0 }],
-    notificationsCount: [{ type: Number, default: 0 }],
+    followersCount: { type: Number, default: 0 },
+    followingCount: { type: Number, default: 0 },
+    postsCount: { type: Number, default: 0 },
+    savedPostsCount: { type: Number, default: 0 },
+    notificationsCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

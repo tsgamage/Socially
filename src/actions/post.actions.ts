@@ -252,6 +252,134 @@ export async function updatePostVisibility(postId: string, visibility: string) {
   }
 }
 
+export async function getUserPosts(userId: string) {
+  try {
+    await connectDB();
+    const user = await getUserByClerkId();
+
+    const posts = await Post.find({ user: userId, visibility: "public" })
+      .sort({ createdAt: -1 })
+      .populate("user", "name username clerkId profilePic")
+      .lean();
+
+    if (user) {
+      for (const post of posts as unknown as IFetchedPost[]) {
+        // Check if user has voted
+        const vote: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+        // 0 for no vote, 1 for upvote, -1 for downvote
+        if (vote) {
+          post.vote = vote.value;
+        } else {
+          post.vote = 0;
+        }
+
+        // Check if user has saved
+        const saved = await SavedPost.findOne({ post: post._id, user: user._id });
+        post.isSaved = !!saved;
+
+        post.commentsCount = await Comment.countDocuments({ post: post._id });
+      }
+    } else {
+      for (const post of posts) {
+        post.vote = "unauthenticated";
+        post.isSaved = "unauthenticated";
+      }
+    }
+
+    return JSON.parse(JSON.stringify(posts));
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
+export async function getSavedPosts() {
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    const savedPosts = await SavedPost.find({ user: user._id })
+      .populate({ path: "post", populate: { path: "user", select: "name username clerkId profilePic" } })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const posts = savedPosts.map((saved) => saved.post);
+    console.log(posts);
+
+    if (user) {
+      for (const post of posts as unknown as IFetchedPost[]) {
+        // Check if user has voted
+        const vote: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+        // 0 for no vote, 1 for upvote, -1 for downvote
+        if (vote) {
+          post.vote = vote.value;
+        } else {
+          post.vote = 0;
+        }
+
+        // Check if user has saved
+        const saved = await SavedPost.findOne({ post: post._id, user: user._id });
+        post.isSaved = !!saved;
+
+        post.commentsCount = await Comment.countDocuments({ post: post._id });
+      }
+    } else {
+      for (const post of posts) {
+        post.vote = "unauthenticated";
+        post.isSaved = "unauthenticated";
+      }
+    }
+
+    return JSON.parse(JSON.stringify(posts));
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+export async function getPrivatePosts() {
+  try {
+    await connectDB();
+    const user: IUser = await getUserByClerkId();
+
+    const posts = await Post.find({ user: user._id, visibility: "private" })
+      .sort({ createdAt: -1 })
+      .populate("user", "name username clerkId profilePic")
+      .lean();
+
+    if (user) {
+      for (const post of posts as unknown as IFetchedPost[]) {
+        // Check if user has voted
+        const vote: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
+        // 0 for no vote, 1 for upvote, -1 for downvote
+        if (vote) {
+          post.vote = vote.value;
+        } else {
+          post.vote = 0;
+        }
+
+        // Check if user has saved
+        const saved = await SavedPost.findOne({ post: post._id, user: user._id });
+        post.isSaved = !!saved;
+
+        post.commentsCount = await Comment.countDocuments({ post: post._id });
+      }
+    } else {
+      for (const post of posts) {
+        post.vote = "unauthenticated";
+        post.isSaved = "unauthenticated";
+      }
+    }
+
+    return JSON.parse(JSON.stringify(posts));
+  } catch (err) {
+    console.error(err);
+    const message = err instanceof Error ? err.message : "An unknown error occurred.";
+    throw new Error(message);
+  }
+}
+
 // * Vote handling functions
 export async function giveUpvote(postId: string) {
   try {

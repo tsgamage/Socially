@@ -7,9 +7,11 @@ export interface IUser extends Document {
   name: string | null;
   gender: string;
   bio: string | null;
+  note: string;
   status: string | null;
   profilePic: string;
   bannerPic: string;
+  lastOnline: Date;
   followersCount: number;
   followingCount: number;
   postsCount: number;
