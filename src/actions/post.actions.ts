@@ -99,7 +99,6 @@ export async function createPost(postData: { images: File[]; content: string }):
     throw new Error(message);
   }
 }
-
 export async function getAllPosts(): Promise<IFetchedPost[]> {
   try {
     await connectDB();
@@ -141,7 +140,6 @@ export async function getAllPosts(): Promise<IFetchedPost[]> {
     throw new Error(message);
   }
 }
-
 export async function getPostById(postId: string) {
   try {
     await connectDB();
@@ -177,7 +175,6 @@ export async function getPostById(postId: string) {
     throw new Error(message);
   }
 }
-
 export async function deletePost(postId: string) {
   try {
     await connectDB();
@@ -211,7 +208,6 @@ export async function deletePost(postId: string) {
     throw new Error(message);
   }
 }
-
 // TODO: check below function
 export async function updatePost(postId: string, post: IPost) {
   try {
@@ -224,7 +220,6 @@ export async function updatePost(postId: string, post: IPost) {
     throw new Error(message);
   }
 }
-
 export async function updatePostVisibility(postId: string, visibility: string) {
   try {
     const user = getUserByClerkId();
@@ -251,7 +246,6 @@ export async function updatePostVisibility(postId: string, visibility: string) {
     throw new Error(message);
   }
 }
-
 export async function getUserPosts(userId: string) {
   try {
     await connectDB();
@@ -293,7 +287,6 @@ export async function getUserPosts(userId: string) {
     throw new Error(message);
   }
 }
-
 export async function getSavedPosts() {
   try {
     await connectDB();
@@ -422,7 +415,6 @@ export async function giveUpvote(postId: string) {
     throw new Error(message);
   }
 }
-
 export async function giveDownvote(postId: string) {
   try {
     await connectDB();
@@ -464,7 +456,6 @@ export async function giveDownvote(postId: string) {
     throw new Error(message);
   }
 }
-
 export async function isAlreadyVoted(postId: string): Promise<IVote | null> {
   try {
     await connectDB();
@@ -526,7 +517,6 @@ export async function toggleSavePost(postId: string) {
     throw new Error(message);
   }
 }
-
 export async function isPostSaved(postId: string): Promise<ISavedPost | null> {
   try {
     await connectDB();
@@ -556,7 +546,6 @@ export async function isPostSaved(postId: string): Promise<ISavedPost | null> {
 }
 
 // * Comment handling functions
-
 export async function getComments(postId: string): Promise<IComment[]> {
   try {
     await connectDB();
@@ -571,7 +560,6 @@ export async function getComments(postId: string): Promise<IComment[]> {
     throw new Error(message);
   }
 }
-
 export async function addComment(postId: string, comment: string) {
   console.log(comment);
   console.log(postId);
@@ -610,7 +598,6 @@ export async function addComment(postId: string, comment: string) {
     throw new Error(message);
   }
 }
-
 export async function editComment(commentId: string, commentContent: string) {
   try {
     await connectDB();
@@ -653,7 +640,6 @@ export async function editComment(commentId: string, commentContent: string) {
     throw new Error(message);
   }
 }
-
 export async function deleteComment(commentId: string) {
   try {
     await connectDB();

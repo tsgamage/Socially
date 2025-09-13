@@ -2,7 +2,7 @@ import { Document, ObjectId } from "mongoose";
 
 export interface IUser extends Document {
   clerkId: string;
-  username: string | null;
+  username: string;
   email: string;
   name: string | null;
   gender: string;
