@@ -170,6 +170,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
     mutationFn: async (visibility: string) => await updatePostVisibility(post._id as string, visibility),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["privatePosts", post.user.username] });
     },
   });
 
@@ -204,7 +205,11 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
         title="Delete Post?"
         description="Are you sure you want to delete this post?"
       />
-      <VisibilityChangeModal ref={visibilityChangeModal as any} onChange={handleVisibilityChange} />
+      <VisibilityChangeModal
+        ref={visibilityChangeModal as any}
+        onChange={handleVisibilityChange}
+        defaultValue={post.visibility}
+      />
       <div className="card xl:w-10/12 bg-base-500 shadow-md border border-base-content/10 rounded-xl mb-6 overflow-hidden mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b-1 border-base-content/10">

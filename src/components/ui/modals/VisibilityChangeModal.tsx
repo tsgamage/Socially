@@ -4,6 +4,7 @@ type Props = {
   ref: React.RefObject<HTMLDialogElement>;
   title?: string;
   onChange: (value: string) => void;
+  defaultValue: string;
 };
 
 const VISIBILITY_OPTIONS = [
@@ -13,8 +14,8 @@ const VISIBILITY_OPTIONS = [
   //   { value: "unlisted", label: "Unlisted" },
 ];
 
-export default function VisibilityChangeModal({ ref, onChange }: Props) {
-  const [selected, setSelected] = useState<string>("public");
+export default function VisibilityChangeModal({ ref, onChange, defaultValue = "public" }: Props) {
+  const [selected, setSelected] = useState<string>(defaultValue);
 
   return (
     <dialog ref={ref} className="modal modal-bottom sm:modal-middle">
