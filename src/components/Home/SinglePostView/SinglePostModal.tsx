@@ -42,11 +42,11 @@ export default function SinglePostModal({ postId, onClose, showCommens, initialI
   if (isLoading || !post) return null;
 
   return (
-    <div className="modal modal-open">
+    <div className="modal modal-open backdrop-brightness-50">
       {/* Modal box: overflow-hidden so internal layout controls scroll behavior */}
       <div
         className={`modal-box p-0 relative overflow-hidden ${
-          isMobile ? "max-w-full rounded-none min-h-auto max-h-11/12 h-auto" : "max-w-5xl h-[90vh]"
+          isMobile ? "min-w-full rounded-none min-h-auto max-h-11/12 h-auto" : "max-w-5xl h-[90vh]"
         } flex flex-col`}
       >
         {/* Close */}
