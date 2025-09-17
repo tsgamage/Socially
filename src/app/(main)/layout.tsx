@@ -30,7 +30,7 @@ export default async function RootLayout({
         <Navbar />
         <div className="flex flex-1 overflow-hidden">
           <LeftSideBar />
-          <main className="flex-1 p-4 overflow-y-auto">{children}</main>
+          <main className="flex-1 px-1 py-4 md:p-5 overflow-y-auto">{children}</main>
           <RightSideBar />
         </div>
         <div className="md:hidden">

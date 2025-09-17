@@ -72,7 +72,7 @@ export default function FriendsPage() {
   });
 
   return (
-    <div className="sm:p-4 max-w-6xl mx-auto w-full">
+    <div className="sm:p-4 max-w-6xl p-2 mx-auto w-full">
       <div className="mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Friends</h1>
         <p className="text-sm sm:text-base text-base-content/60">Hang with your amazing friends!</p>
