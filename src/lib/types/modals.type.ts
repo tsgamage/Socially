@@ -49,7 +49,7 @@ export interface IComment extends Document {
 export interface IFollowRequest extends Document {
   sender: ObjectId;
   receiver: ObjectId;
-  status: string;
+  status: "pending";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,4 +100,22 @@ export interface IFetchedComment extends Omit<IComment, "user"> {
     name: string | null;
     profilePic: string;
   };
+}
+export interface IFetchedFollowRequest extends Omit<IFollowRequest, "sender" | "receiver"> {
+  sender: IUser;
+  receiver: IUser;
+}
+export interface IFetchedFollow extends Omit<IFollow, "follower" | "following"> {
+  follower: IUser;
+  following: IUser;
+  isMutual?: boolean;
+}
+
+export interface IFetchedSuggestedFriends extends Document {
+  lastOnline: Date;
+  username: string;
+  name: string | null;
+  profilePic: string;
+  followersCount: number;
+  requestSended: boolean;
 }

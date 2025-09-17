@@ -1,232 +1,167 @@
 "use client";
 import { useState } from "react";
-import FriendCard, { UserData } from "@/components/Friends/FriendCard";
-import { Users, UserPlus, UserCheck, UserX, Search } from "lucide-react";
+import SuggestedFriendCard from "@/components/Friends/SuggestedFriendCard";
 
-const suggestedFriends: UserData[] = [
-  {
-    name: "Alice Johnson",
-    username: "alice_w",
-    avatar: "https://i.pravatar.cc/150?u=alice",
-    followers: 1200,
-    mutualFriends: 15,
-    type: "suggested",
-  },
-  {
-    name: "Bob Smith",
-    username: "bob_s",
-    avatar: "https://i.pravatar.cc/150?u=bob",
-    followers: 850,
-    mutualFriends: 8,
-    type: "suggested",
-  },
-  {
-    name: "Charlie Brown",
-    username: "charlie_m",
-    avatar: "https://i.pravatar.cc/150?u=charlie",
-    followers: 2100,
-    mutualFriends: 23,
-    type: "suggested",
-  },
-  {
-    name: "Diana Prince",
-    username: "diana_p",
-    avatar: "https://i.pravatar.cc/150?u=diana",
-    followers: 500,
-    mutualFriends: 3,
-    type: "suggested",
-  },
-];
-
-const myFriends: UserData[] = [
-  {
-    name: "Eve Adams",
-    username: "eve_a",
-    avatar: "https://i.pravatar.cc/150?u=eve",
-    followers: 3000,
-    onlineStatus: true,
-    lastSeen: "2 min ago",
-    type: "friend",
-  },
-  {
-    name: "Frank Lewis",
-    username: "frank_l",
-    avatar: "https://i.pravatar.cc/150?u=frank",
-    followers: 1500,
-    onlineStatus: false,
-    lastSeen: "5 hours ago",
-    type: "friend",
-  },
-  {
-    name: "Grace Hopper",
-    username: "grace_h",
-    avatar: "https://i.pravatar.cc/150?u=grace",
-    followers: 900,
-    onlineStatus: true,
-    lastSeen: "Online now",
-    type: "friend",
-  },
-];
-
-const requests: UserData[] = [
-  {
-    name: "Harry Kim",
-    username: "harry_k",
-    avatar: "https://i.pravatar.cc/150?u=harry",
-    followers: 700,
-    mutualFriends: 2,
-    type: "pending",
-  },
-  {
-    name: "Ivy Jones",
-    username: "ivy_j",
-    avatar: "https://i.pravatar.cc/150?u=ivy",
-    followers: 1100,
-    mutualFriends: 7,
-    type: "sent",
-  },
-];
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  toggleUserFollowRequestById,
+  getAllFriends,
+  getFriendRequests,
+  getSuggestedFriends,
+  acceptFriendRequest,
+  unfollowUserById,
+  sendFriendRequestByUsername,
+} from "@/actions/user.actions";
+import FriendRequestCard from "@/components/Friends/FriendRequestCard";
+import FriendCard from "@/components/Friends/FriendCard";
+import FriendsSearch from "@/components/Friends/FriendsSearch";
+import FriendsTabs from "@/components/Friends/FriendsTabs";
 
 export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState("suggested");
-  const [searchQuery, setSearchQuery] = useState("");
+  const queryClient = useQueryClient();
 
-  const renderContent = () => {
-    let data = [];
-    
-    switch (activeTab) {
-      case "suggested":
-        data = suggestedFriends;
-        break;
-      case "friends":
-        data = myFriends;
-        break;
-      case "requests":
-        data = requests;
-        break;
-      default:
-        data = [];
-    }
-    
-    // Filter based on search query
-    const filteredData = data.filter(user => 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const { data: suggestedFriends } = useQuery({
+    queryKey: ["friends", "suggested"],
+    queryFn: async () => await getSuggestedFriends(),
+  });
 
-    if (filteredData.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Users size={48} className="text-base-content/30 mb-4" />
-          <p className="text-base-content/60">No {activeTab} found</p>
-          <p className="text-sm text-base-content/40 mt-1">
-            {searchQuery ? "Try a different search term" : `You don't have any ${activeTab} yet`}
-          </p>
-        </div>
-      );
-    }
+  const { data: allFriends } = useQuery({
+    queryKey: ["friends", "all"],
+    queryFn: async () => await getAllFriends(),
+  });
 
-    return (
-      <div className="flex flex-col gap-3 mt-6">
-        {filteredData.map((user) => (
-          <FriendCard key={user.username} user={user} />
-        ))}
-      </div>
-    );
-  };
+  const { data: allRequests } = useQuery({
+    queryKey: ["friends", "requests"],
+    queryFn: async () => await getFriendRequests(),
+  });
 
-  const getTabIcon = (tabName: string) => {
-    switch (tabName) {
-      case "suggested":
-        return <UserPlus size={18} />;
-      case "friends":
-        return <Users size={18} />;
-      case "requests":
-        return <UserCheck size={18} />;
-      default:
-        return <Users size={18} />;
-    }
-  };
+  const { mutate: toggleUserFollow } = useMutation({
+    mutationFn: async (followerId: string) => await toggleUserFollowRequestById(followerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends", "requests"] });
+      queryClient.invalidateQueries({ queryKey: ["friends", "all"] });
+    },
+  });
+  const { mutate: unfollowUser } = useMutation({
+    mutationFn: async (followId: string) => await unfollowUserById(followId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends", "all"] });
+    },
+  });
+  const { mutate: acceptRequest } = useMutation({
+    mutationFn: async (requestId: string) => await acceptFriendRequest(requestId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends", "requests"] });
+      queryClient.invalidateQueries({ queryKey: ["friends", "all"] });
+    },
+  });
+  const {
+    mutate: sendFriendRequestWithUsername,
+    data,
+    isPending,
+    isError,
+    error,
+  } = useMutation({
+    mutationFn: async (username: string) => await sendFriendRequestByUsername(username),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends", "all"] });
+      queryClient.invalidateQueries({ queryKey: ["friends", "requests"] });
+      queryClient.invalidateQueries({ queryKey: ["friends", "suggested"] });
+    },
+  });
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Friends</h1>
-        <p className="text-base-content/60">Connect and manage your friends</p>
+    <div className="sm:p-4 max-w-6xl mx-auto w-full">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Friends</h1>
+        <p className="text-sm sm:text-base text-base-content/60">Hang with your amazing friends!</p>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative mb-6">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={20} className="text-base-content/40" />
-        </div>
-        <input
-          type="text"
-          placeholder="Search friends..."
-          className="input input-bordered w-full pl-10"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+      <FriendsSearch
+        isError={isError}
+        isSending={isPending}
+        error={error?.message as string}
+        successMessage={data?.message as string}
+        placeholder="Send friend request ..."
+        onSubmit={sendFriendRequestWithUsername}
+      />
 
-      {/* Tabs */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-6">
-        <button
-          className={`btn justify-start sm:justify-center flex-1 ${activeTab === "suggested" ? "btn-primary" : "btn-ghost"}`}
-          onClick={() => setActiveTab("suggested")}
-        >
-          {getTabIcon("suggested")}
-          <span className="ml-2">Suggested</span>
-          {activeTab === "suggested" && (
-            <span className="badge badge-sm badge-primary ml-2">
-              {suggestedFriends.length}
-            </span>
-          )}
-        </button>
-        
-        <button
-          className={`btn justify-start sm:justify-center flex-1 ${activeTab === "friends" ? "btn-primary" : "btn-ghost"}`}
-          onClick={() => setActiveTab("friends")}
-        >
-          {getTabIcon("friends")}
-          <span className="ml-2">Friends</span>
-          {activeTab === "friends" && (
-            <span className="badge badge-sm badge-primary ml-2">
-              {myFriends.length}
-            </span>
-          )}
-        </button>
-        
-        <button
-          className={`btn justify-start sm:justify-center flex-1 ${activeTab === "requests" ? "btn-primary" : "btn-ghost"}`}
-          onClick={() => setActiveTab("requests")}
-        >
-          {getTabIcon("requests")}
-          <span className="ml-2">Requests</span>
-          {activeTab === "requests" && (
-            <span className="badge badge-sm badge-primary ml-2">
-              {requests.length}
-            </span>
-          )}
-        </button>
-      </div>
+      <FriendsTabs
+        active={activeTab as any}
+        onChange={(t) => setActiveTab(t)}
+        counts={{ suggested: suggestedFriends?.length, friends: allFriends?.length, requests: allRequests?.length }}
+      />
 
       {/* Active Tab Label */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold capitalize">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h2 className="text-base sm:text-lg font-semibold capitalize">
           {activeTab === "suggested" && "People You May Know"}
           {activeTab === "friends" && "Your Friends"}
           {activeTab === "requests" && "Friend Requests"}
         </h2>
-        <span className="text-sm text-base-content/60">
-          {activeTab === "suggested" && `${suggestedFriends.length} suggestions`}
-          {activeTab === "friends" && `${myFriends.length} friends`}
-          {activeTab === "requests" && `${requests.length} requests`}
+        <span className="text-xs sm:text-sm text-base-content/60">
+          {activeTab === "suggested" && `${suggestedFriends && suggestedFriends.length} suggestions`}
+          {activeTab === "friends" && `${allFriends?.length} friends`}
+          {activeTab === "requests" && `${allRequests?.length} requests`}
         </span>
       </div>
 
       {/* Content */}
-      {renderContent()}
+
+      {/* <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Users size={48} className="text-base-content/30 mb-4" />
+        <p className="text-base-content/60">No {activeTab} found</p>
+        <p className="text-sm text-base-content/40 mt-1">
+          {searchQuery ? "Try a different search term" : `You don't have any ${activeTab} yet`}
+        </p>
+      </div> */}
+
+      <div className="flex flex-col gap-2 sm:gap-3 mt-4 sm:mt-6">
+        {activeTab === "suggested" &&
+          suggestedFriends &&
+          suggestedFriends.map((user) => (
+            <SuggestedFriendCard
+              key={user.username}
+              user={user}
+              onFollow={() => {
+                toggleUserFollow(user._id as string);
+                user.requestSended = true;
+              }}
+              type="suggested"
+              followed={user.requestSended}
+            />
+          ))}
+        {activeTab === "requests" &&
+          allRequests &&
+          allRequests.map((request) => (
+            <FriendRequestCard
+              key={request.receiver.username}
+              request={request}
+              onCancelFollow={() => {
+                toggleUserFollow(request.receiver._id as string);
+                if (suggestedFriends) {
+                  const idx = suggestedFriends.findIndex((m) => m._id === request.receiver._id);
+                  if (idx !== -1) {
+                    suggestedFriends[idx].requestSended = false;
+                  }
+                }
+              }}
+              onAcceptReq={acceptRequest}
+              onRejectReq={() => {}}
+            />
+          ))}
+        {activeTab === "friends" &&
+          allFriends &&
+          allFriends.map((friend) => (
+            <FriendCard
+              key={friend.follower.username + friend.following.username}
+              friend={friend}
+              onUnfollow={unfollowUser}
+              toggleFollow={toggleUserFollow}
+            />
+          ))}
+      </div>
     </div>
   );
 }
