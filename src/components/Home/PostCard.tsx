@@ -37,6 +37,7 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [isCopyLinkClicked, setIsCopyLinkClicked] = useState(false);
+  const [readmoreClicked, setReadmoreClicked] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const deleteComfirmationModal = useRef<HTMLDialogElement>(null);
@@ -285,8 +286,21 @@ export default function PostCard({ post, onClick, onCommentClick, onCopyLinkClic
 
         {/* Content */}
         {post.content && (
-          <div className="mb-1 p-3">
-            <span className="text-md">{post.content}</span>
+          <div className="mb-1 p-3 ">
+            {post.content.length > 100 && !readmoreClicked && (
+              <span className="text-md whitespace-pre-wrap">{post.content.slice(0, 100)} ...</span>
+            )}
+            {(readmoreClicked || post.content.length < 100) && (
+              <span className="text-md whitespace-pre-wrap">{post.content}</span>
+            )}
+            {post.content.length > 100 && !readmoreClicked && (
+              <button
+                className="block text-md text-blue-600 underline cursor-pointer"
+                onClick={() => setReadmoreClicked(true)}
+              >
+                Readmore
+              </button>
+            )}
           </div>
         )}
 

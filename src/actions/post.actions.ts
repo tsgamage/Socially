@@ -26,7 +26,6 @@ export async function createPost(postData: { images: File[]; content: string }):
   if (images.length === 0 && !content.trim()) {
     throw new Error("Post cannot be empty.");
   }
-
   try {
     await connectDB();
     const user = await getUserByClerkId();
@@ -246,7 +245,7 @@ export async function updatePostVisibility(postId: string, visibility: string) {
     throw new Error(message);
   }
 }
-export async function getUserPosts(userId: string) {
+export async function getUserPosts(userId: string): Promise<IFetchedPost[]> {
   try {
     await connectDB();
     const user = await getUserByClerkId();
@@ -287,7 +286,7 @@ export async function getUserPosts(userId: string) {
     throw new Error(message);
   }
 }
-export async function getSavedPosts() {
+export async function getSavedPosts(): Promise<IFetchedPost[]> {
   try {
     await connectDB();
     const user: IUser = await getUserByClerkId();
@@ -298,7 +297,6 @@ export async function getSavedPosts() {
       .lean();
 
     const posts = savedPosts.map((saved) => saved.post);
-    console.log(posts);
 
     if (user) {
       for (const post of posts as unknown as IFetchedPost[]) {
@@ -331,7 +329,7 @@ export async function getSavedPosts() {
     throw new Error(message);
   }
 }
-export async function getPrivatePosts() {
+export async function getPrivatePosts(): Promise<IFetchedPost[]> {
   try {
     await connectDB();
     const user: IUser = await getUserByClerkId();
@@ -561,8 +559,6 @@ export async function getComments(postId: string): Promise<IComment[]> {
   }
 }
 export async function addComment(postId: string, comment: string) {
-  console.log(comment);
-  console.log(postId);
   try {
     await connectDB();
     const user: IUser = await getUserByClerkId();

@@ -65,15 +65,17 @@ export default function CreatePost() {
       };
     }
 
-    if (images.length > 0) {
+    console.log(`images[0]`, (images[0] as File).size);
+
+    if (images.length === 1 && (images[0] as File).size === 0) {
       formDataObj = {
         content,
-        images,
+        images: [],
       };
     } else {
       formDataObj = {
         content,
-        images: [],
+        images,
       };
     }
 

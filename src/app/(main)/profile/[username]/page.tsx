@@ -1,18 +1,20 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit3, Bookmark, Heart, Grid3X3, Pencil } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getUserByUsername } from "@/actions/user.actions";
 import { getPrivatePosts, getSavedPosts, getUserPosts } from "@/actions/post.actions";
-import PostCard from "@/components/Home/PostCard";
 import { useParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { IFetchedPost } from "@/lib/types/modals.type";
+import PostAndModal from "@/components/ui/PostAndModal";
 
 export default function ProfilePage() {
   const { user } = useUser();
   const { username } = useParams();
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "saved" | "private">("posts");
+  const [mapData, setMapData] = useState<IFetchedPost[] | undefined>([]);
 
   const { data: userData } = useQuery({
     queryKey: ["user", username],
@@ -25,20 +27,31 @@ export default function ProfilePage() {
     queryKey: ["posts", username],
     queryFn: async () => await getUserPosts(userData?.data._id as string),
     enabled: !!userData,
-    initialData: [],
   });
   const { data: savedPosts } = useQuery({
     queryKey: ["savedPosts", username],
     queryFn: getSavedPosts,
     enabled: activeTab === "saved",
-    initialData: [],
   });
   const { data: privatePosts } = useQuery({
     queryKey: ["privatePosts", username],
     queryFn: getPrivatePosts,
     enabled: user?.id === userData?.data.clerkId && activeTab === "private",
-    initialData: [],
   });
+
+  useEffect(() => {
+    switch (activeTab) {
+      case "posts":
+        setMapData(userPosts);
+        return;
+      case "private":
+        setMapData(privatePosts);
+        return;
+      case "saved":
+        setMapData(savedPosts);
+        return;
+    }
+  }, [activeTab, setMapData, userPosts, privatePosts, savedPosts]);
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
@@ -137,48 +150,7 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-      {activeTab === "posts" && userPosts && userPosts.length > 0 && (
-        <div>
-          {userPosts.map((post: any) => (
-            <PostCard
-              key={post._id}
-              post={post}
-              onClick={() => {}}
-              onCommentClick={() => {}}
-              onCopyLinkClick={() => {}}
-              onBookmarkClick={() => {}}
-            />
-          ))}
-        </div>
-      )}
-      {activeTab === "saved" && savedPosts && savedPosts.length > 0 && (
-        <div>
-          {savedPosts.map((post: any) => (
-            <PostCard
-              key={post._id}
-              post={post}
-              onClick={() => {}}
-              onCommentClick={() => {}}
-              onCopyLinkClick={() => {}}
-              onBookmarkClick={() => {}}
-            />
-          ))}
-        </div>
-      )}
-      {activeTab === "private" && privatePosts && privatePosts.length > 0 && (
-        <div>
-          {privatePosts.map((post: any) => (
-            <PostCard
-              key={post._id}
-              post={post}
-              onClick={() => {}}
-              onCommentClick={() => {}}
-              onCopyLinkClick={() => {}}
-              onBookmarkClick={() => {}}
-            />
-          ))}
-        </div>
-      )}
+      {mapData && <PostAndModal postData={mapData} />}
     </div>
   );
 }

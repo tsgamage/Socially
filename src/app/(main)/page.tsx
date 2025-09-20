@@ -1,45 +1,15 @@
 "use client";
 import { getAllPosts } from "@/actions/post.actions";
 import CreatePost from "@/components/Home/CreatePost";
-import PostCard from "@/components/Home/PostCard";
-import SinglePostModal from "@/components/Home/SinglePostView/SinglePostModal";
-import { IFetchedPost } from "@/lib/types/modals.type";
+import PostAndModal from "@/components/ui/PostAndModal";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
 
 export default function Home() {
-  const [showModal, setShowModal] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<IFetchedPost>({} as IFetchedPost);
-  const [initialImageIndex, setInitialImageIndex] = useState(0);
-  const [isCommentClicked, setIsCommentClicked] = useState(false);
-
   const { data, isLoading } = useQuery({
     queryKey: ["posts"],
     queryFn: getAllPosts,
   });
-
-  const handlePostClick = (post: IFetchedPost, imageIndex: number = 0) => {
-    setSelectedPost(post);
-    setInitialImageIndex(imageIndex);
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedPost({} as IFetchedPost);
-    setInitialImageIndex(0);
-    setIsCommentClicked(false);
-  };
-
-  const handleBookmarkClick = () => {};
-
-  const handleCopyLinkClick = async (postId: string, imageIndex: number) => {
-    await navigator.clipboard.writeText(
-      process.env.NEXT_PUBLIC_SITE_URL +
-        `/post/${postId}/?view=${isCommentClicked ? "comments" : "post"}&initialImage=${imageIndex + 1}`
-    );
-  };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -50,28 +20,7 @@ export default function Home() {
           <p className="animate-bounce drop-shadow-[3px_5px_0px_rgba(0,0,0)]">Loading...</p>
         </div>
       )}
-      <div>
-        {!isLoading &&
-          data!.map((post: IFetchedPost, index: number) => (
-            <PostCard
-              key={index}
-              post={post}
-              onClick={(imageIndex?: number) => handlePostClick(post, imageIndex ?? 0)}
-              onCommentClick={() => setIsCommentClicked(true)}
-              onBookmarkClick={() => handleBookmarkClick()}
-              onCopyLinkClick={(imageIndex) => handleCopyLinkClick(post._id as string, imageIndex as number)}
-            />
-          ))}
-      </div>
-
-      {showModal && selectedPost && (
-        <SinglePostModal
-          postId={selectedPost._id as string}
-          onClose={handleCloseModal}
-          showCommens={isCommentClicked}
-          initialImageIndex={initialImageIndex}
-        />
-      )}
+      {!isLoading && <PostAndModal postData={data} />}
     </div>
   );
 }
