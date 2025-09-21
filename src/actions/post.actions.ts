@@ -4,13 +4,14 @@ import { connectDB } from "@/lib/db/db.config";
 import Post from "@/lib/db/models/post.model";
 import { revalidatePath } from "next/cache";
 import { getUserByClerkId } from "./util.action";
-import { IComment, IFetchedPost, IPost, ISavedPost, IUser, IVote } from "@/lib/types/modals.type";
+import { IComment, IFetchedPost, INotification, IPost, ISavedPost, IUser, IVote } from "@/lib/types/modals.type";
 import Comment from "@/lib/db/models/comment.modal";
 import SavedPost from "@/lib/db/models/savedPost.modal";
 import Notification from "@/lib/db/models/notification.modal";
 import Vote from "@/lib/db/models/vote.model";
 import xss from "xss";
 import imagekit from "@/lib/config/imagekit";
+import User from "@/lib/db/models/user.model";
 
 export type PostFormState = {
   success: boolean;
@@ -189,7 +190,7 @@ export async function deletePost(postId: string) {
       throw new Error("Post not found");
     }
 
-    if (post.user.toString() !== user._id.toString()) {
+    if (post.user.toString() !== (user._id as string).toString()) {
       throw new Error("Unauthorized");
     }
 
@@ -390,6 +391,21 @@ export async function giveUpvote(postId: string) {
     const isAlreadyVoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
 
     if (!isAlreadyVoted) {
+      const postCreator = await User.findById(post.user);
+      await Notification.findOneAndDelete({
+        user: postCreator,
+        sender: user._id,
+        post: post._id,
+        type: "upvote",
+      });
+      const followbackNotification: INotification = new Notification({
+        user: postCreator,
+        sender: user._id,
+        post: post._id,
+        type: "upvote",
+      });
+      await followbackNotification.save();
+
       await new Vote({ post: post._id, user: user._id, value: 1 }).save();
       post.votesCount += 1;
     } else {
@@ -582,8 +598,17 @@ export async function addComment(postId: string, comment: string) {
     }
 
     const senitizedComment = xss(comment);
+    const newComment: IComment = new Comment({ post: post._id, user: user._id, content: senitizedComment });
+    await newComment.save();
 
-    await new Comment({ post: post._id, user: user._id, content: senitizedComment }).save();
+    const followbackNotification: INotification = new Notification({
+      user: post.user,
+      sender: user._id,
+      type: "comment",
+      comment: newComment._id,
+      post: post._id,
+    });
+    await followbackNotification.save();
 
     revalidatePath("/");
 

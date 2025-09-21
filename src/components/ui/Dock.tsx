@@ -9,7 +9,7 @@ export default function Dock() {
   const pathname = usePathname();
   const { user } = useUser();
   return (
-    <div className="dock dock-sm">
+    <div className="dock dock-sm z-1000">
       <Link className={pathname === "/" ? "dock-active" : ""} href={"/"}>
         <Home />
       </Link>

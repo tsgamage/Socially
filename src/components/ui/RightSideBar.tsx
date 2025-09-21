@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import { X, Search, UserPlus, ChevronRight, Users, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { UserPlus, ChevronRight } from "lucide-react";
 
 const dummyUsers = [
   {
@@ -32,53 +32,23 @@ const dummyUsers = [
 ];
 
 export default function RightSideBar() {
-  const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Close sidebar when clicking outside on mobile
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const sidebar = document.getElementById("right-sidebar");
-      if (isOpen && sidebar && !sidebar.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const filteredUsers = dummyUsers.filter((user) =>
-    user.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = dummyUsers.filter((user) => user.username.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <>
-      {/* Mobile toggle button */}
-      <button
-        className="lg:hidden fixed bottom-4 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-content shadow-lg flex items-center justify-center"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open suggestions"
-      >
-        <Users size={24} />
-      </button>
-
-      {/* Overlay for mobile */}
-      {isOpen && <div className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" />}
-
       {/* Sidebar */}
       <div
         id="right-sidebar"
         className={`
-          fixed lg:sticky top-0 right-0 h-full lg:h-screen
+          hidden sm:flex  lg:sticky top-0 right-0 h-full lg:h-screen
           w-80 max-w-[85vw] lg:max-w-none
           bg-base-200 border-l border-base-content/10
           transform transition-transform duration-300 ease-in-out z-50 lg:z-auto
-          flex flex-col
-          ${isOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
-        `}
+           flex-col`}
       >
         {/* Suggestions Card */}
         <div className="flex-1 overflow-y-auto p-4">
@@ -116,9 +86,7 @@ export default function RightSideBar() {
                       </div>
                       <div className="flex flex-col">
                         <span className="font-semibold text-sm">{user.username}</span>
-                        <span className="text-xs text-base-content/60">
-                          {user.mutualFriends} mutual friends
-                        </span>
+                        <span className="text-xs text-base-content/60">{user.mutualFriends} mutual friends</span>
                       </div>
                     </div>
                     <button className="btn btn-primary btn-xs rounded-full">Follow</button>

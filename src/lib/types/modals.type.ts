@@ -57,9 +57,10 @@ export interface IFollowRequest extends Document {
 export interface INotification extends Document {
   user: ObjectId;
   sender: ObjectId | null;
-  type: string;
+  type: "upvote" | "comment" | "follow" | "follow_accept" | "follow_back";
   post: ObjectId | null;
   comment: ObjectId | null;
+  request: ObjectId | null;
   read: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -118,4 +119,11 @@ export interface IFetchedSuggestedFriends extends Document {
   profilePic: string;
   followersCount: number;
   requestSended: boolean;
+}
+
+export interface IFetchedNotification extends Omit<INotification, "user" | "sender" | "post" | "comment"> {
+  user: IUser;
+  sender: IUser;
+  post: IPost;
+  comment: IComment;
 }

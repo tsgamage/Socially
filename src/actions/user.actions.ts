@@ -11,6 +11,7 @@ import {
   IFetchedSuggestedFriends,
   IFollow,
   IFollowRequest,
+  INotification,
   IUser,
 } from "@/lib/types/modals.type";
 import { auth, currentUser } from "@clerk/nextjs/server";
@@ -222,11 +223,33 @@ export async function toggleUserFollowRequestById(followerId: string) {
       });
 
       await newFollowing.save();
+
+      //   sends a notification to the user about following back
+      //   deletes if already a older notification presents
+      await Notification.findOneAndDelete({
+        user: followerId,
+        sender: user._id,
+        type: "follow_back",
+      });
+      const followbackNotification: INotification = new Notification({
+        user: followerId,
+        sender: user._id,
+        type: "follow_back",
+      });
+      await followbackNotification.save();
     } else {
       const alreadySended: IUser | null = await FollowRequest.findOne({ sender: user._id, receiver: followerId });
 
       if (alreadySended) {
         await FollowRequest.findByIdAndDelete(alreadySended._id);
+
+        // Deleting notification
+        await Notification.findOneAndDelete({
+          user: followerId,
+          sender: user._id,
+          type: "follow",
+        });
+
         response = { success: true, message: "Friend request deleted" };
       } else {
         const followReq: IFollowRequest = new FollowRequest({
@@ -235,6 +258,16 @@ export async function toggleUserFollowRequestById(followerId: string) {
           status: "pending",
         });
         await followReq.save();
+
+        // Sending notification
+        const followbackNotification: INotification = new Notification({
+          user: followerId,
+          sender: user._id,
+          type: "follow",
+          request: followReq._id,
+        });
+        await followbackNotification.save();
+
         response = { success: true, message: "Friend request sended" };
       }
     }
@@ -286,6 +319,21 @@ export async function acceptFriendRequest(requestId: string) {
     });
 
     await newFollowing.save();
+
+    // Deleting notification from accepted user
+    await Notification.findOneAndDelete({
+      user: request.receiver,
+      sender: request.sender,
+      type: "follow",
+    });
+
+    const newAcceptNotification: INotification = new Notification({
+      user: request.sender,
+      sender: request.receiver,
+      type: "follow_accept",
+    });
+
+    newAcceptNotification.save();
 
     return { success: true };
   } catch (err) {
