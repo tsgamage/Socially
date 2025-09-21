@@ -5,12 +5,16 @@ import { useState } from "react";
 import { MessageCircle, UserCheck, UserPlus, X, Check, Bell, Eye, UserStar, ArrowBigUpDash } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/nextjs";
-import { fetchUserNotifications, markAsReadNotificationById } from "@/actions/notifications.action";
+import {
+  deleteNotificationById,
+  fetchUserNotifications,
+  markAsReadNotificationById,
+} from "@/actions/notifications.action";
 import { formatDistanceToNowStrict } from "date-fns";
 import { acceptFriendRequest } from "@/actions/user.actions";
 
 export default function NotificationPage() {
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "upvote" | "comment" | "request">("all");
 
   const { user } = useUser();
   const queryClient = useQueryClient();
@@ -52,10 +56,28 @@ export default function NotificationPage() {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
+
+  const { mutate: deleteNotification } = useMutation({
+    mutationFn: deleteNotificationById,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
   const filteredNotifications =
     activeFilter === "all"
       ? fetchedNotifications
-      : fetchedNotifications?.filter((notif) => notif.type === activeFilter);
+      : fetchedNotifications?.filter((notif) => {
+          switch (activeFilter) {
+            case "comment":
+              return notif.type === "comment";
+            case "upvote":
+              return notif.type === "upvote";
+            case "request":
+              return notif.type === "follow" || notif.type === "follow_accept" || notif.type === "follow_back";
+          }
+        });
+
+  const unreadNotifications = fetchedNotifications?.filter((notif) => notif.read === false);
 
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-6">
@@ -65,8 +87,8 @@ export default function NotificationPage() {
             <Bell size={24} className="text-primary" />
           </div>
           <h1 className="text-2xl font-bold">Notifications</h1>
-          {fetchedNotifications && fetchedNotifications.length > 0 && (
-            <span className="badge badge-primary badge-lg">{fetchedNotifications.length}</span>
+          {unreadNotifications && unreadNotifications.length > 0 && (
+            <span className="badge badge-primary badge-lg">{unreadNotifications.length}</span>
           )}
         </div>
       </div>
@@ -92,8 +114,8 @@ export default function NotificationPage() {
           Comments
         </a>
         <a
-          className={`tab ${activeFilter === "incomingRequest" ? "bg-primary hover:bg-primary" : ""} hover:bg-base-100 w-full`}
-          onClick={() => setActiveFilter("incomingRequest")}
+          className={`tab ${activeFilter === "request" ? "bg-primary hover:bg-primary" : ""} hover:bg-base-100 w-full`}
+          onClick={() => setActiveFilter("request")}
         >
           Requests
         </a>
@@ -168,7 +190,7 @@ export default function NotificationPage() {
                         <div>
                           <p className="text-base-content/80 mb-2">commented on your post:</p>
                           <Link
-                            href={`/post/${notification.post.id}`}
+                            href={`/post/${notification.post._id}`}
                             className="flex items-start gap-3 hover:bg-base-200/50 p-2 rounded-lg transition-colors mb-2"
                           >
                             {notification.post.images && (
@@ -219,7 +241,10 @@ export default function NotificationPage() {
                       <Eye size={16} />
                     </button>
                   )}
-                  <button className="btn btn-ghost btn-sm btn-circle flex-shrink-0" onClick={() => {}}>
+                  <button
+                    className="btn btn-ghost btn-sm btn-circle flex-shrink-0"
+                    onClick={() => deleteNotification(notification._id as string)}
+                  >
                     <X size={16} />
                   </button>
                 </div>

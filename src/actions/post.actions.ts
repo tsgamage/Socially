@@ -11,7 +11,6 @@ import Notification from "@/lib/db/models/notification.modal";
 import Vote from "@/lib/db/models/vote.model";
 import xss from "xss";
 import imagekit from "@/lib/config/imagekit";
-import User from "@/lib/db/models/user.model";
 
 export type PostFormState = {
   success: boolean;
@@ -391,20 +390,21 @@ export async function giveUpvote(postId: string) {
     const isAlreadyVoted: IVote | null = await Vote.findOne({ post: post._id, user: user._id });
 
     if (!isAlreadyVoted) {
-      const postCreator = await User.findById(post.user);
-      await Notification.findOneAndDelete({
-        user: postCreator,
-        sender: user._id,
-        post: post._id,
-        type: "upvote",
-      });
-      const followbackNotification: INotification = new Notification({
-        user: postCreator,
-        sender: user._id,
-        post: post._id,
-        type: "upvote",
-      });
-      await followbackNotification.save();
+      if (post.user.toJSON() !== (user._id as any).toJSON()) {
+        await Notification.findOneAndDelete({
+          user: post.user,
+          sender: user._id,
+          post: post._id,
+          type: "upvote",
+        });
+        const upvoteNotification: INotification = new Notification({
+          user: post.user,
+          sender: user._id,
+          post: post._id,
+          type: "upvote",
+        });
+        await upvoteNotification.save();
+      }
 
       await new Vote({ post: post._id, user: user._id, value: 1 }).save();
       post.votesCount += 1;
@@ -601,14 +601,16 @@ export async function addComment(postId: string, comment: string) {
     const newComment: IComment = new Comment({ post: post._id, user: user._id, content: senitizedComment });
     await newComment.save();
 
-    const followbackNotification: INotification = new Notification({
-      user: post.user,
-      sender: user._id,
-      type: "comment",
-      comment: newComment._id,
-      post: post._id,
-    });
-    await followbackNotification.save();
+    if (post.user.toJSON() !== (user._id as any).toJSON()) {
+      const commentNotification: INotification = new Notification({
+        user: post.user,
+        sender: user._id,
+        type: "comment",
+        comment: newComment._id,
+        post: post._id,
+      });
+      await commentNotification.save();
+    }
 
     revalidatePath("/");
 

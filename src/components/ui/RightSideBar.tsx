@@ -1,42 +1,67 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
 import { UserPlus, ChevronRight } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getSuggestedFriends, toggleUserFollowRequestById } from "@/actions/user.actions";
+import { IFetchedSuggestedFriends } from "@/lib/types/modals.type";
+import { useState } from "react";
 
-const dummyUsers = [
-  {
-    username: "john_doe",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-    mutualFriends: 12,
-  },
-  {
-    username: "jane_doe",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-    mutualFriends: 8,
-  },
-  {
-    username: "peter_jones",
-    avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d",
-    mutualFriends: 3,
-  },
-  {
-    username: "susan_smith",
-    avatar: "https://i.pravatar.cc/150?u=a048581f4e29026701d",
-    mutualFriends: 5,
-  },
-  {
-    username: "william_brown",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d",
-    mutualFriends: 7,
-  },
-];
+const SideBarFriendCard = ({
+  user,
+  toggleFollow,
+}: {
+  user: IFetchedSuggestedFriends;
+  toggleFollow: (userId: string) => void;
+}) => {
+  const [followClicked, setFollowClicked] = useState(false);
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-base-200 transition-colors duration-200">
+      <div className="flex items-center space-x-3">
+        <div className="avatar">
+          <div className="w-10 h-10 rounded-full">
+            <Image src={user.profilePic} alt={user.username} width={40} height={40} className="object-cover" />
+          </div>
+        </div>
+        <div className="flex flex-col">
+          <span className="font-semibold text-sm">{user.username}</span>
+        </div>
+      </div>
+      {followClicked ? (
+        <button
+          className="btn btn-dash btn-xs rounded-full"
+          onClick={() => {
+            setFollowClicked(false);
+            toggleFollow(user._id as string);
+          }}
+        >
+          Cancel
+        </button>
+      ) : (
+        <button
+          className="btn btn-primary btn-xs rounded-full"
+          onClick={() => {
+            setFollowClicked(true);
+            toggleFollow(user._id as string);
+          }}
+        >
+          Follow
+        </button>
+      )}
+    </div>
+  );
+};
 
 export default function RightSideBar() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const queryClient = useQueryClient();
 
-  // Close sidebar when clicking outside on mobile
-
-  const filteredUsers = dummyUsers.filter((user) => user.username.toLowerCase().includes(searchQuery.toLowerCase()));
+  const { mutate: toggleUserFollow } = useMutation({
+    mutationFn: async (followerId: string) => await toggleUserFollowRequestById(followerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends", "requests"] });
+      queryClient.invalidateQueries({ queryKey: ["friends", "all"] });
+    },
+  });
+  const { data: suggestedFriends } = useQuery({ queryKey: ["friends", "suggested"], queryFn: getSuggestedFriends });
 
   return (
     <>
@@ -58,40 +83,19 @@ export default function RightSideBar() {
                 <UserPlus size={18} />
                 Suggestions For You
               </h3>
-              <span className="badge badge-primary badge-sm">{filteredUsers.length}</span>
+              <span className="badge badge-primary badge-sm">{suggestedFriends?.length}</span>
             </div>
 
-            {filteredUsers.length === 0 ? (
+            {suggestedFriends && suggestedFriends.length === 0 ? (
               <div className="text-center py-4 text-base-content/60">
                 <p>No suggestions found</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredUsers.map((user, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-base-200 transition-colors duration-200"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="avatar">
-                        <div className="w-10 h-10 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-base-100">
-                          <Image
-                            src={user.avatar}
-                            alt={user.username}
-                            width={40}
-                            height={40}
-                            className="object-cover"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-sm">{user.username}</span>
-                        <span className="text-xs text-base-content/60">{user.mutualFriends} mutual friends</span>
-                      </div>
-                    </div>
-                    <button className="btn btn-primary btn-xs rounded-full">Follow</button>
-                  </div>
-                ))}
+                {suggestedFriends &&
+                  suggestedFriends.map((user) => (
+                    <SideBarFriendCard key={user.username} user={user} toggleFollow={toggleUserFollow} />
+                  ))}
               </div>
             )}
           </div>
@@ -119,14 +123,6 @@ export default function RightSideBar() {
               <p>No recent activity</p>
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-base-content/10">
-          <button className="btn btn-ghost w-full justify-between text-xs">
-            See more suggestions
-            <ChevronRight size={14} />
-          </button>
         </div>
       </div>
     </>

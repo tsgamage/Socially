@@ -32,24 +32,26 @@ export async function syncUser() {
 
     const userAlreadyExists = await User.findOne({ clerkId: userId });
 
-    if (userAlreadyExists) {
-      // * Add logic here to update the user if their Clerk data has changed.
-      return;
-    }
-
+    const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ");
     const email = clerkUser.emailAddresses[0]?.emailAddress;
 
-    const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ");
-
-    const newUser = new User({
-      clerkId: userId,
-      username: clerkUser.username,
-      email: email,
-      name: name,
-      profilePic: clerkUser.imageUrl || "",
-    });
-
-    await newUser.save();
+    if (userAlreadyExists) {
+      await User.findOneAndUpdate(userAlreadyExists._id, {
+        clerkId: userId,
+        username: clerkUser.username,
+        email: email,
+        name: name,
+        profilePic: clerkUser.imageUrl || "",
+      });
+    } else {
+      await new User({
+        clerkId: userId,
+        username: clerkUser.username,
+        email: email,
+        name: name,
+        profilePic: clerkUser.imageUrl || "",
+      }).save();
+    }
   } catch (err) {
     console.error("Error in syncUser:", err);
   }
